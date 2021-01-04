@@ -12,7 +12,6 @@ import threading
 import random
 import pandas as pd
 
-#CHANGE get_user_IP() get_process_id timestamp
 hostIP = "127.0.0.1"     # Database server IP
 username = "root"
 passwd = "cesgtamu"
@@ -254,7 +253,7 @@ while True:
 
             try:
 
-                processID = process[0]
+                proceQFlowssID = process[0]
 
                 #queueID = get_queue(IP_Address, processID)[0][0]    #Try without dereferencing - 
                 #queueID = get_queue(IP_Address, processID)
