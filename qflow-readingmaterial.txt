@@ -1,0 +1,76 @@
+1. Learning TC commands:
+
+http://luxik.cdi.cz/~devik/qos/htb/manual/userg.htm
+https://www.youtube.com/watch?v=ginVUfYgUOk
+https://serverfault.com/questions/906458/network-shaping-using-tc-netem-doesnt-seem-to-work
+
+To show tc:          tc qdisc show dev wlo1    (wlan0 for openwrt router)
+To delete tc:         tc qdisc del dev wlan0 root
+To show packet information in queues:				 tc -s qdisc show dev wlan0	(s: stats)
+
+
+tc qdisc replace dev wlan0 root pfifo
+tc qdisc replace dev wlan0 root handle 1: htb default 20
+tc class add dev wlan0 parent 1: classid 1:1 htb rate $1 ceil $1
+tc class add dev wlan0 parent 1:1 classid 1:10 htb rate $1 ceil $1
+tc class add dev wlan0 parent 1: classid 1:20 htb rate 0.5mbps ceil 0.5mbps
+tc qdisc add dev wlan0 parent 1:10 handle 10: netem loss 0% delay 0ms
+tc qdisc add dev wlan0 parent 1:20 handle 20: sfq perturb 10
+
+tc filter add dev wlan0 parent 1:0 protocol ip prio 1 u32 match ip dst 192.168.1.129/32 flowid 1:10
+tc filter add dev wlan0 parent 1:0 protocol ip prio 1 u32 match ip dst 192.168.1.132/32 flowid 1:10
+tc filter add dev wlan0 parent 1:0 protocol ip prio 1 u32 match ip dst 192.168.1.145/32 flowid 1:10
+tc filter add dev wlan0 parent 1:0 protocol ip prio 1 u32 match ip dst 192.168.1.123/32 flowid 1:20
+
+
+
+tc filter add dev wlan0 parent 1:0 protocol ip prio 1 u32 match ip dst 192.168.1.132/32 flowid 1:10
+tc filter add dev wlan0 parent 1:0 protocol ip prio 1 u32 match ip dst 192.168.1.129/32 flowid 1:30
+
+
+
+Loops with arguments:   for i in $(seq 1 1 6);do ./test_tcloop.sh $i; done                                                     ( test_tcloop is on openwrt)
+
+
+2. Setting up MySQL and mysql workbench:
+sqltest.py
+Password: cesgtamu
+Make sure to SUDO mysql-workbench
+
+https://www.youtube.com/watch?v=3vsC05rxZ8c&list=PLzMcBGfZo4-l5kVSNVKGO60V6RkXAVtp-
+Change conf file bind address to 0.0.0.0 then restart 
+
+mysql -u root -p
+Setting permissions:          GRANT ALL ON flow_bazaar.* TO amdroider@192.168.1.129 IDENTIFIED BY "cesgtamu";                    Then restart mysql  (sudo service mysql restart)
+If password doesn't satisfy current policy requirements:  SHOW VARIABLES LIKE 'validate_password%';          Then SET GLOBAL validate_password_policy=LOW;
+Changing size of column:   ALTER TABLE policy_table CHANGE COLUMN ports ports VARCHAR(800);
+
+Delete all data: truncate table client_table; truncate table results_table; truncate table policy_table;
+
+
+3. Ryu:
+testryu.py on nuc4
+To install:             https://ryu.readthedocs.io/en/latest/getting_started.html
+
+Running ryu:        ryu-manager --verbose fb_exec_cmd.py
+Starting openflow on router:  /etc/init.d/openflow start
+Stopping openflow             :  /etc/init.d/openflow stop
+
+When connecting a new system to openflow we have to change the config file on the router:  vi /etc/config/openflow   and then change option 'ofctl' to 'tcp:INSERT_IPADDRESSOFSYSTEM'
+Also make sure there's no firewall running:  sudo ufw status (to check)           then           sudo ufw disable   or sudo ufw allow 1191/tcp    (opwns 1191 port number to allow TCP traffic through ufw firewall)
+
+
+4.Selenium
+seleniumtest.py
+Install Selenium:  pip install selenium
+Download chromedriver version according to your chrome browser and unzip:      https://chromedriver.chromium.org/downloads
+
+First install the extension on chrome
+For adblock extension:      https://www.reddit.com/r/learnpython/comments/4zzn69/how_do_i_get_adblockplus_to_work_with_selenium/
+In ubuntu extensions are in :        ~/.config/google-chrome/Default/Extensions         . Copy and paste into download
+
+5.iperf
+
+On laptop client:  iperf -c 192.168.1.132 -i 1 -u -t 10 -b 10m
+On NUC server:   iperf -s -u | tee iperfresult.txt
+

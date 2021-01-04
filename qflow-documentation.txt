@@ -1,0 +1,84 @@
+OpenWrt - 1:
+
+ssh root@192.168.1.1
+Password: cesgtamu
+
+Starting openflow on router:  /etc/init.d/openflow start
+Stopping openflow             :  /etc/init.d/openflow stop
+
+NUC controller: 192.168.1.218/192.168.10.2	ndn2
+NUC client 1: 192.168.1.132					nuc4
+NUC client 2: 192.168.1.129					amdroider
+NUC client 3: 192.168.1.130/ 192.168.10.4   ndn3					(password: ndn)
+
+For any new NUC, make sure download directory and username are changed in nuc_selenium.py. Make sure controller NUC has given it permission
+
+HOW TO RUN:
+
+Make sure you're using python 2, not python 3 (python3 is default on controller nuc ndn2)
+
+Open mysql workbench - sudo mysql-workbench (password for database schema: cesgtamu)
+In qflow or updated or qflow/updated,
+On controller NUC, ssh into OpenWrt. Run the script to create queues (test_tc.sh). Run openflow (/etc/init.d/openflow start). Then run "ryu-manager --verbose controller.py" on another tab to connect to openflow with ryu.
+		Wait till ryu properly connects (it may take some time to start sending instructions).
+		
+Run "./client_manager 2" to open 2 sessions on each client NUCS. Make sure the videos are actually playing. Sometimes the videos get paused at the beginning as well as when a new video is being opened so its better to split screen both the videos to make sure videos are playing and data is being sent to controller. If a video is paused at the beginning just click to start it manually.
+On controller NUC, run results.py 
+		Use python3 for dummypolicy.py/whatever policy file you have on different tabs.
+
+
+
+NUC:
+
+client_manager.sh
+	Run as:  "./client_manager x" where x specifies the number of clients to be started
+	Opens x sessions of nuc_selenium.py passing arguments from 1 to x
+
+nuc_selenium.py
+	Opens up youtube sessions and inserts data into client_table database
+	
+	Program flow: main --> session_decider --> yt_session --> yt_open_video --> yt_set_vq --> yt_session_logger --> insert_into_mysql
+							
+							
+	main: 
+		Takes argument 'y' from client_manager. Sets threadName to be "Thread-y".
+	
+	session_decider:
+		Checks if directories are present and calls yt_session
+	
+	yt_session:
+		Sets up selenium driver
+	
+	yt_open_video:
+		Opens randomly selected youtube video
+	
+	yt_set_vq:
+		Opens settings, goes to quality and chooses highest possible quality
+		Switches autoplay off
+	
+	yt_session_logger:
+		Gets ports of video playing. Determines whether video is buffering or playing. Accordingly calls insert_into_mysql with appropriate data arguments. Calls itself at the end again
+	
+	insert_into_mysql:
+		Wrapper function to insert into client table of flow_bazaar db
+		Inserts IPAddress, processID, threadID, ports, bitrate, video_player_state, dqs_state, load_and_play_state, stallNo, timestamp
+	
+LAPTOP/MAIN NUC	
+	
+results.py
+	Processes raw data from client_table and inputs state into results_table every 10 seconds
+	Calculates QoE of system
+	Inserts runID, IPAddress, processID, threadID, ports, buffer_state, play_state, bitrate, hasStalled, stallDur, prev_QoE, prev_buffer_state, prev_play_state, queueID, QoE, timestamp
+	
+policy_interface.py
+		Acts as an interface for policies to be implemented
+		Contains functions to read and write into policy_table
+
+Any policy can be written in a separate file importing policy_interface to read and write from policy_table
+
+
+
+	
+	
+	
+	
