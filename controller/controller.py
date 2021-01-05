@@ -183,36 +183,40 @@ class SimpleSwitch13(app_manager.RyuApp):
         cursor.execute(query)
         threadIDs = cursor.fetchall()  #result is of the form [(x,),(y,)]
 
-        print 'threadIDs: ',threadIDs
-        for client in threadIDs: #Reading information about all clients
-
-          query = ("SELECT * FROM `policy_table` WHERE `threadID` = %s ORDER BY `timestamp` DESC LIMIT 1")
-          value = client[0]
-          print 'value: ',value
-      	  cursor.execute(query, (value,))
-      	  result = cursor.fetchall()
-      	  IPAddress = None
-      	  flows = None
-          print 'result: ',result
-      	  for row in result:
-                    queueID = int(row[8])
-                    IPAddress = row[0]
-                    flows = row[3]
-                    portList = flows.split(',')
-                    for port in portList:
-                            if port == 'fc12':  #In the case of fc12 appears as a port number, ignore. Supposed to be only numbers
-                              print "fc12 seen"
-                              continue
-                            newport = ''
-                            for char in port:
-                                if char.isdigit():
-                                    newport = newport + char
-                            cmdStr = "tc filter add dev wlan0 parent 1:0 protocol ip prio 1 u32 match ip dst "
-                            cmdStr = cmdStr + str(IPAddress) + "/32" + " match ip dport " + str(newport) 
-                            cmdStr = cmdStr + " 0xffff flowid " + "1:" + str(queueID) 
-                            print cmdStr
-                            myCmd = Command(FB_TC_CMD, cmdStr)
-                            myCmd.send(datapath)
+        if threadIDs:
+            print 'threadIDs: ',threadIDs
+            for threadID in threadIDs: #Reading information about all clients
+                threadID = threadID[0]
+                print 'threadID', threadID
+                query = ("SELECT * FROM `policy_table` WHERE `threadID` = %s ORDER BY `timestamp` DESC LIMIT 1")
+                cursor.execute(query, (threadID,))
+                result = cursor.fetchall()
+                IPAddress = None
+                flows = None
+                #print 'result: ',result
+                for row in result:
+                            queueID = int(row[8])
+                            threadID = row[1]
+                            IPAddress = threadID.split('/')[0]
+                            flows = row[2]
+                            portList = flows.split(',')
+                            #print portList
+                            for port in portList:
+                                    if port == 'fc12':  #In the case of fc12 appears as a port number, ignore. Supposed to be only numbers
+                                        print "fc12 seen"
+                                        continue
+                                    newport = ''
+                                    for char in port:
+                                        if char.isdigit():
+                                            newport = newport + char
+                                    cmdStr = "tc filter add dev wlan0 parent 1:0 protocol ip prio 1 u32 match ip dst "
+                                    cmdStr = cmdStr + str(IPAddress) + "/32" + " match ip dport " + str(newport) 
+                                    cmdStr = cmdStr + " 0xffff flowid " + "1:" + str(queueID) 
+                                    print cmdStr
+                                    myCmd = Command(FB_TC_CMD, cmdStr)
+                                    myCmd.send(datapath)
+        else:
+            print 'No threads available right now'
 
 	      
         cmdStr = "tc filter add dev wlan0 parent 1:0 protocol ip prio 1 u32 match ip src 192.168.1.140/32 flowid 1:10"  #Dummy filter so that all the previous filters get executed. Put in the default queueID 30

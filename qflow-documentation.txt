@@ -21,6 +21,8 @@ Open mysql workbench - sudo mysql-workbench (password for database schema: cesgt
 In qflow or updated or qflow/updated,
 On controller NUC, ssh into OpenWrt. Run the script to create queues (test_tc.sh). Run openflow (/etc/init.d/openflow start). Then run "ryu-manager --verbose controller.py" on another tab to connect to openflow with ryu.
 		Wait till ryu properly connects (it may take some time to start sending instructions).
+
+		If Ryu gives an error of "No module named controller.py" and the directories are right, then there is an error in controller.py. Check by doing 'python controller.py' to debug.
 		
 Run "./client_manager 2" to open 2 sessions on each client NUCS. Make sure the videos are actually playing. Sometimes the videos get paused at the beginning as well as when a new video is being opened so its better to split screen both the videos to make sure videos are playing and data is being sent to controller. If a video is paused at the beginning just click to start it manually.
 On controller NUC, run results.py 

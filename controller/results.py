@@ -55,7 +55,7 @@ def get_prev_state(threadID):
         con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
 
         cur = con.cursor()
-        cur.execute("SELECT QoE, buffer_state, play_state FROM flow_bazaar.results_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID))
+        cur.execute("SELECT QoE, buffer_state, play_state FROM flow_bazaar.results_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID,))
         results = cur.fetchone()
         con.close()
         if(bool(results) is not False):
@@ -92,7 +92,7 @@ def get_youtube_specific(threadID):
         con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
 
         cur = con.cursor()
-        cur.execute("SELECT load_and_play_state, video_player_state, bitrate, stallNo FROM flow_bazaar.client_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID))
+        cur.execute("SELECT load_and_play_state, video_player_state, bitrate, stallNo FROM flow_bazaar.client_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID,))
         results = cur.fetchall()
         con.close()
         if(bool(results) is not False):
@@ -110,7 +110,7 @@ def get_prev_ts_client(threadID):
     try:
         con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
         cur = con.cursor()
-        cur.execute("SELECT timestamp FROM flow_bazaar.client_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID))
+        cur.execute("SELECT timestamp FROM flow_bazaar.client_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID,))
         results = cur.fetchone()
 
         con.close()
@@ -130,7 +130,7 @@ def get_ports(threadID):
         con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
 
         cur = con.cursor()
-        cur.execute("SELECT ports FROM flow_bazaar.client_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID))
+        cur.execute("SELECT ports FROM flow_bazaar.client_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID,))
         results = cur.fetchall()
         if con:
             con.close()
@@ -253,12 +253,12 @@ while True:
 
             try:
 
-                proceQFlowssID = process[0]
+                processID = process[0]
 
                 #queueID = get_queue(IP_Address, processID)[0][0]    #Try without dereferencing - 
                 #queueID = get_queue(IP_Address, processID)
                 #print '     queueID: ',queueID
-
+                queueID = 0
 
                 buffer_state = 0    #loaded minus progressed
 
@@ -302,8 +302,7 @@ while True:
                 
                 print '     prev_buffer_state: ',prev_buffer_state
                 print '     prev_play_state: ',prev_play_state
-"""                 if QoE == -1: #Initial condition for QoE
-                    QoE = 5 """
+
                 prev_QoE = QoE
                 print "     Prev QoE -> ", prev_QoE
 
@@ -340,8 +339,8 @@ while True:
                         if stallDur > 10:
                             stallDur = 10
 
-                    print threadID, ": Stall duration -> ", stallDur
-                    QoE = interruptDQS(QoE, stall, stallDur)[-1]
+                        print threadID, ": Stall duration -> ", stallDur
+                        QoE = interruptDQS(QoE, stall, stallDur)[-1]
                     else:
                         print "Playback without stalls!"
 
@@ -383,7 +382,7 @@ while True:
                     now_load = float(test[1].split(']')[0])
                     buffer_state = now_load - now_progress
                     if buffer_state < 0:
-                    buffer_state = 0
+                        buffer_state = 0
                     #print "Current buffer state -> ",buffer_state
 
                 currentStall = stall

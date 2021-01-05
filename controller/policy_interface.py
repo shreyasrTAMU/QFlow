@@ -4,6 +4,7 @@
 import MySQLdb
 import numpy as np
 from time import time
+import traceback
 
 hostIP = "127.0.0.1"     # Database server IP
 username = "root"
@@ -27,7 +28,6 @@ def execute_db(sql_script):
 
 
 run_cols = [    #Columns in results table
-    'IPAddress', 
     'threadID', 
     'processID', 
     # 'runID', 
@@ -83,14 +83,14 @@ def fetch_run(run, ip=None, thread=None):   #read a run from the flowbazaar data
 
     if ip is None:
         return execute_db(
-            "SELECT {} FROM flow_bazaar.results_table WHERE runID = {} ORDER BY IPAddress ASC, threadID ASC;".format(
+            "SELECT {} FROM flow_bazaar.results_table WHERE runID = {} ORDER BY threadID ASC;".format(
                 ', '.join(run_cols), run
             )
         )
 
     result = execute_db(
-        "SELECT {} FROM flow_bazaar.results_table WHERE runID = {} and IPAddress = '{}' and threadID = '{}';".format(
-            ', '.join(run_cols), run, ip, thread
+        "SELECT {} FROM flow_bazaar.results_table WHERE runID = {} and threadID = '{}';".format(
+            ', '.join(run_cols), thread
         )
     )
     if len(result) > 0:
@@ -98,33 +98,16 @@ def fetch_run(run, ip=None, thread=None):   #read a run from the flowbazaar data
     return None
 
 queues = (30, 10)
-def write_assignment(var_ip, var_processID, var_threadID, var_ports, var_queue):   #Assign flows to queues
+def write_assignment(var_processID, var_threadID, var_ports, var_play_state, var_prev_buffer_state, var_buffer_state, var_QoE, var_highQ, var_queue, var_Stalls):   #Assign flows to queues
 
     timenow = int(time())
     try:
         con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
         cur = con.cursor()
-        cur.execute("INSERT INTO `policy_table` (`IPAddress`, `processID`, `threadID`,`ports`, `queueID`, `timestamp`) VALUES (%s, %s,%s,%s,%s,%s)",(var_ip, var_processID, var_threadID, var_ports, var_queue, timenow) )
+        cur.execute("INSERT INTO `policy_table` (`processID`, `threadID`,`ports`, `play_state`, `prev_buffer_state`, `buffer_state`, `QoE`,`No_of_HighQs`,`queueID`, `Stalls`, `timestamp`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(var_processID, var_threadID, var_ports, var_play_state, var_prev_buffer_state, var_buffer_state, var_QoE, var_highQ, var_queue, var_Stalls,timenow) )
         con.commit()
         results = cur.fetchall()
         return results
-    except MySQLdb.Error as e:
-        print("Error {}: {}".format(e.args[0],e.args[1]))
-    # return execute_db(
-    #     "INSERT INTO `policy_table` (`IPAddress`, `processID`, `threadID`,`ports`, `queueID`, `timestamp`) VALUES (%s, %s,%s,%s,%s,%s)",(var_ip, var_processID, var_threadID, var_ports, var_queue, timenow) )
-    
+    except:
+        traceback.print_exc()
 
-
-# get latest run value
-# print(latest_run())
-
-# get client id
-# print(client_id('192.168.1.132', 'Thread-1'))
-# print(fetch_latest_state('192.168.1.132', 'Thread-1'))
-
-
-
-# get unique labels
-# print(execute_db(
-#     "SELECT DISTINCT play_state FROM flow_bazaar.results_table;"
-#     ))
