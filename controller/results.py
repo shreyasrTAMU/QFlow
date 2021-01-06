@@ -18,6 +18,20 @@ passwd = "cesgtamu"
 db = "flow_bazaar"                  # Database name
 time_inbetween_runs = 10
 
+def execute_db(sql_script):
+    '''
+    read a query's result from the flowbazaar database
+    '''
+    results = None
+    try:
+        con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
+        cur = con.cursor()
+        cur.execute(sql_script)
+        results = cur.fetchall()
+        return results
+    except MySQLdb.Error as e:
+        print("Error {}: {}".format(e.args[0],e.args[1]))
+
 def insert_into_db(runID, processID,threadID, ports, buffer_state, play_state, bitrate, currentStall, stallDur, prev_QoE, prev_buffer_state, prev_play_state, queueID, QoE):
     timestamp = int(time.time())
     try:
@@ -34,17 +48,14 @@ def insert_into_db(runID, processID,threadID, ports, buffer_state, play_state, b
 
 def get_event_ts(threadID,bufID,event):
     try:
-        con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
+        results = execute_db("SELECT timestamp FROM flow_bazaar.client_table WHERE threadID = '{}' AND stallNo = '{}' AND dqs_state = '{}' ORDER BY timestamp ASC LIMIT 1;".format(threadID,bufID,event))
+        
 
-        cur = con.cursor()
-        cur.execute("SELECT timestamp FROM flow_bazaar.client_table WHERE threadID = %s AND stallNo = %s AND dqs_state = %s ORDER BY timestamp ASC LIMIT 1;", (threadID,bufID,event))
-        results = cur.fetchone()
-        con.close()
-        if(bool(results) is not False):
-            return results[0]
-        elif(bool(results) is False):
-            results = -1
-            return results
+        if not results:
+            return -1
+
+        results = results[0][0]
+        return results
 
     except MySQLdb.Error, e:
         print "Error %d: %s" % (e.args[0],e.args[1])
@@ -52,17 +63,11 @@ def get_event_ts(threadID,bufID,event):
 
 def get_prev_state(threadID):
     try:
-        con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
+        results = execute_db("SELECT QoE, buffer_state, play_state FROM flow_bazaar.results_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID,))[0]
 
-        cur = con.cursor()
-        cur.execute("SELECT QoE, buffer_state, play_state FROM flow_bazaar.results_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID,))
-        results = cur.fetchone()
-        con.close()
-        if(bool(results) is not False):
-            return results
-        elif(bool(results) is False):
+        if not results:
             results = -1
-            return results
+        return results
 
     except MySQLdb.Error, e:
         print "Error %d: %s" % (e.args[0],e.args[1])
@@ -70,18 +75,12 @@ def get_prev_state(threadID):
 
 def get_youtube_stalls_10sec_ago(threadID, time_10sec_back):
     try:
-        con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
+        results = execute_db("SELECT stallNo FROM flow_bazaar.client_table WHERE threadID = '{}' AND timestamp <= '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID, time_10sec_back))
 
-        cur = con.cursor()
-        cur.execute("SELECT stallNo FROM flow_bazaar.client_table WHERE threadID = %s AND timestamp <= %s ORDER BY timestamp DESC LIMIT 1;", (threadID, time_10sec_back))
-        results = cur.fetchall()
-        con.close()
-        if(bool(results) is not False):
-            return results
-        elif(bool(results) is False):
+        if not results:
             print "     No new youtube prev stall state"
             results = 0
-            return results
+        return results
 
     except MySQLdb.Error, e:
         print "Error %d: %s" % (e.args[0],e.args[1])
@@ -89,18 +88,12 @@ def get_youtube_stalls_10sec_ago(threadID, time_10sec_back):
 
 def get_youtube_specific(threadID):
     try:
-        con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
+        results = execute_db("SELECT load_and_play_state, video_player_state, bitrate, stallNo FROM flow_bazaar.client_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID))
 
-        cur = con.cursor()
-        cur.execute("SELECT load_and_play_state, video_player_state, bitrate, stallNo FROM flow_bazaar.client_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID,))
-        results = cur.fetchall()
-        con.close()
-        if(bool(results) is not False):
-            return results
-        elif(bool(results) is False):
+        if not results:
             print "No new youtube state"
             results = 0
-            return results
+        return results
 
     except MySQLdb.Error, e:
         print "Error %d: %s" % (e.args[0],e.args[1])
@@ -108,18 +101,11 @@ def get_youtube_specific(threadID):
 
 def get_prev_ts_client(threadID):
     try:
-        con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
-        cur = con.cursor()
-        cur.execute("SELECT timestamp FROM flow_bazaar.client_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID,))
-        results = cur.fetchone()
+        results = execute_db("SELECT timestamp FROM flow_bazaar.client_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID,))[0][0]
 
-        con.close()
-
-        if(bool(results) is not False):
-            return results[0]
-        elif(bool(results) is False):
+        if not results:
             results = 0
-            return results
+        return results
 
     except MySQLdb.Error, e:
         print "Error %d: %s" % (e.args[0],e.args[1])
@@ -127,19 +113,13 @@ def get_prev_ts_client(threadID):
 
 def get_ports(threadID):
     try:
-        con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
 
-        cur = con.cursor()
-        cur.execute("SELECT ports FROM flow_bazaar.client_table WHERE threadID = %s ORDER BY timestamp DESC LIMIT 1;", (threadID,))
-        results = cur.fetchall()
-        if con:
-            con.close()
-            if(bool(results) is not False):
-                return results
-            elif(bool(results) is False):
-                print "No new youtube state"
-                results = 0
-                return results
+        results = execute_db("SELECT ports FROM flow_bazaar.client_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID,))
+
+        if(not results):
+            print "No new youtube state"
+            results = 0
+        return results
 
     except MySQLdb.Error, e:
         print "Error %d: %s" % (e.args[0],e.args[1])
@@ -151,18 +131,11 @@ def get_queue(IP_Address,processID):    #Check output when policy table is empty
     lb_timestamp = _timestamp - time_inbetween_runs
 
     try:
-        con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
-
-        cur = con.cursor()
-        cur.execute("SELECT queueID FROM flow_bazaar.policy_table WHERE IPAddress = %s AND processID = %s ORDER BY timestamp DESC LIMIT 1;", (IP_Address, processID))
-        results = cur.fetchall()    #print
-        con.close()
-        if(bool(results) is not False):
-            return results
-        elif(bool(results) is False):
+        results = execute_db("SELECT queueID FROM flow_bazaar.policy_table WHERE IPAddress = '{}' AND processID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(IP_Address, processID))
+        if(not results):
             print "No new queue."
             results = 0 #NULL 
-            return results
+        return results
 
     except MySQLdb.Error, e:
         print "Error %d: %s" % (e.args[0],e.args[1])
@@ -173,56 +146,40 @@ def get_process_id(threadID):
     lb_timestamp = _timestamp - time_inbetween_runs
 
     try:
-        con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
 
-        cur = con.cursor()
-        cur.execute("SELECT processID FROM flow_bazaar.client_table WHERE threadID = %s AND timestamp >= %s ORDER BY timestamp DESC;", (threadID, lb_timestamp))
-        results = cur.fetchall()
-        con.close()
-        if(bool(results) is not False):
-            return results
-        elif(bool(results) is False):
+        results = execute_db("SELECT processID FROM flow_bazaar.client_table WHERE threadID = '{}' AND timestamp >= '{}' ORDER BY timestamp DESC;".format(threadID, lb_timestamp))
+
+        if(not results):
             print "no process id."
             results = [0]
-            return results
+        return results
     except MySQLdb.Error, e:
         print "Error %d: %s" % (e.args[0],e.args[1])
 
 
-def get_user_threadID():
+def get_client_threadIDs():
     _timestamp = int(time.time())
     lb_timestamp = _timestamp - 20
 
     try:
-        con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
-
-        cur = con.cursor()
-        cur.execute("SELECT threadID FROM flow_bazaar.client_table WHERE timestamp >= (%s) ORDER BY timestamp DESC;", (lb_timestamp, )  )
-        results = cur.fetchall()
-        con.close()
-        if(bool(results) is not False):
-            return results
-        elif(bool(results) is False):
+        results = execute_db("SELECT threadID FROM flow_bazaar.client_table WHERE timestamp >= '{}' ORDER BY timestamp DESC;".format(lb_timestamp))
+        if(not results):
             print "No new users/data"
             results = 0
-            return results
+
+        return results
 
     except MySQLdb.Error, e:
         print "Error %d: %s" % (e.args[0],e.args[1])
 
 def get_latest_run():
     try:
-        con = MySQLdb.connect(host= hostIP, user=username, passwd=passwd, db=db)
-
-        cur = con.cursor()
-        cur.execute("Select runID from flow_bazaar.results_table order by timestamp DESC limit 1;")
-        results = cur.fetchone()
-        #print 'results of get_latest_run sql ',results
-        if(bool(results) is not False):
-            return results[0]
-        elif(bool(results) is False):
+        results = execute_db("Select runID from flow_bazaar.results_table order by timestamp DESC limit 1;")[0][0]
+        print results
+        if(not results):
             results = 0
-            return results
+
+        return results
 
     except MySQLdb.Error, e:
         print "Error %d: %s" % (e.args[0],e.args[1])
@@ -240,14 +197,14 @@ while True:
     runID = int(get_latest_run())   #Returns 0 if no data in results table
     runID = runID+1
     print 'runID: ',runID
-    threadIDs = get_user_threadID() #Get threadIDs >20sec back from client table
+    threadIDs = get_client_threadIDs() #Get threadIDs >20sec back from client table
 
     if( threadIDs != 0): #data exists in client table
         Unique_threadID = list(set(threadIDs))
 
         for threadID in Unique_threadID:
             threadID = threadID[0]  #threadID is a tuple of the form ('x.x.y.y', )
-            process = get_process_id(threadID) # from table1
+            process = get_process_id(threadID) # processid corresponding to threadidfrom client table
 
             QoE = 0
 
@@ -361,7 +318,7 @@ while True:
                             stallDur += (tsStallEnd - tsStallStart + 1)
                             if stallDur > 10:
                                 stallDur = 10
-                            print IP_Address, threadID, ": Stall duration -> ", stallDur
+                            print threadID, ": Stall duration -> ", stallDur
                             QoE = interruptDQS(QoE, stall, stallDur)[-1]
                         else:
                             #print "Playback without stalls!"
