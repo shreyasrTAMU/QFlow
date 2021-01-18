@@ -89,7 +89,7 @@ def yt_open_video(dt, process_id, driver, threadID, start_time):
 		if( len(driver.window_handles) == 2):
 			driver.switch_to.window(driver.window_handles[1])
 			print 'switch to 1 for ',threadID
-			driver.close();
+			driver.close()
 			print 'driver close for ', threadID
 			driver.switch_to.window(driver.window_handles[0])
 	except:
@@ -101,56 +101,63 @@ def yt_open_video(dt, process_id, driver, threadID, start_time):
 
 
 def yt_set_vq(dt, driver, process_id, threadID, start_time, idx):
-    print "Entering yt_set_vq for ",threadID
-    numberoftimes_vq = 0
-    url_playing = driver.current_url
-    numberoftimes_vq += 1
-    qualityandautoplay = False
-    try:
-        elem = driver.find_element_by_class_name('videoAdUi')	#If there is an advertisement
-        time.sleep(1)
-        ad_skip_button = driver.find_element_by_css_selector('.videoAdUiSkipButton.videoAdUiAction')
-        ad_skip_button.click()
+	print "Entering yt_set_vq for ",threadID
+	numberoftimes_vq = 0
+	url_playing = driver.current_url
+	numberoftimes_vq += 1
+	qualityandautoplay = False
+	try:
+		elem = driver.find_element_by_class_name('videoAdUi')	#If there is an advertisement
+		time.sleep(1)
+		ad_skip_button = driver.find_element_by_css_selector('.videoAdUiSkipButton.videoAdUiAction')
+		ad_skip_button.click()
 
-    except:
-        pass
-    try:
-        url_playing = driver.current_url
-    except:
-        yt_set_vq(dt, driver, process_id, threadID, start_time, idx)
+	except:
+		pass
+	try:
+		url_playing = driver.current_url
+	except:
+		yt_set_vq(dt, driver, process_id, threadID, start_time, idx)
 
-    while not qualityandautoplay and numberoftimes_vq < 6:
+	while not qualityandautoplay:
 
-	    try:
-	    	#Sets the video quality to the highest possible
-	        time.sleep(1) #In this block of codes, sleeping 1 second is absolutely necessary since youtube has UI response delay.
-
-
-	        setting_button = driver.find_element_by_css_selector('.ytp-button.ytp-settings-button')
-	        setting_button.click()
-	        time.sleep(1)
-	        quality_option_button = driver.find_element_by_xpath('//div[text()="Quality"]')
-	        quality_option_button.click()
-	        time.sleep(1)
-	        quality_button = driver.find_elements_by_css_selector('div.ytp-menuitem-label')	#Selects highest quality possible of video 
-	        quality_button[0].click()
-	        time.sleep(1)
-
-	        setting_button = driver.find_element_by_css_selector('.ytp-button.ytp-settings-button')
-	        setting_button.click()
-	        time.sleep(1)
-	        autoplay_option_button = driver.find_element_by_xpath('//div[text()="Autoplay"]')
-	        autoplay_option_button.click()
-	        time.sleep(1)
-
-	        qualityandautoplay = True
-	    except:
-	    	traceback.print_exc()
-	    	numberoftimes_vq += 1
+		try:
+			#Sets the video quality to the highest possible
+			time.sleep(1) #In this block of codes, sleeping 1 second is absolutely necessary since youtube has UI response delay.
 
 
-    yt_logger = Timer(dt, yt_session_logger, [round(time.time()), dt, 0, driver, process_id, threadID, url_playing, start_time, idx,0,'initial_buffering','no dqs state'])
-    yt_logger.start()
+			setting_button = driver.find_element_by_css_selector('.ytp-button.ytp-settings-button')
+			setting_button.click()
+			time.sleep(1)
+			quality_option_button = driver.find_element_by_xpath('//div[text()="Quality"]')
+			quality_option_button.click()
+			time.sleep(1)
+			quality_button = driver.find_elements_by_css_selector('div.ytp-menuitem-label')	#Selects highest quality possible of video 
+			quality_button[0].click()
+			time.sleep(1)
+
+			setting_button = driver.find_element_by_css_selector('.ytp-button.ytp-settings-button')
+			setting_button.click()
+			time.sleep(1)
+			try:
+				print 'Trying old autoplay button'
+				autoplay_option_button = driver.find_element_by_xpath('//div[text()="Autoplay"]')
+				autoplay_option_button.click()
+			except:
+				print 'New youtube autoplay button'
+				autoplay_option_button = driver.find_element_by_css_selector('div.ytp-autonav-toggle-button')
+			
+			autoplay_option_button.click()
+			time.sleep(1)
+
+			qualityandautoplay = True
+		except:
+			traceback.print_exc()
+			numberoftimes_vq += 1
+
+
+	yt_logger = Timer(dt, yt_session_logger, [round(time.time()), dt, 0, driver, process_id, threadID, url_playing, start_time, idx,0,'initial_buffering','no dqs state'])
+	yt_logger.start()
 
 
 lock = threading.Lock()
@@ -190,7 +197,7 @@ def yt_session_logger(start, interval, count, driver, process_id, threadID, url_
 		#traceback.print_exc()
 		try:
 
-			buffering_boolean = driver.find_element_by_class_name('buffering-mode')
+			bufferingboolean = driver.find_element_by_class_name('buffering-mode')
 			
 
 			global lock
@@ -212,8 +219,8 @@ def yt_session_logger(start, interval, count, driver, process_id, threadID, url_
 				state = "buffering"
 				print('BUFFERING ')
 
-				print_fields(IPAddress, process_id, threadID, flows, bitrate, state, dqs_state, '?', rebufNo,  url_playing)
-				insert_into_mysql(IPAddress, process_id, threadID, str(flows), bitrate,state, dqs_state, '?', rebufNo)
+				print_fields(process_id, threadID, flows, bitrate, state, dqs_state, '?', rebufNo,  url_playing)
+				insert_into_mysql(process_id, threadID, str(flows), bitrate,state, dqs_state, '?', rebufNo)
 
 			#except:
 				#traceback.print_exc()
@@ -263,7 +270,7 @@ def yt_session_logger(start, interval, count, driver, process_id, threadID, url_
 				traceback.print_exc()
 				print "No clue what to do", process_id, threadID
 				sys.exit()
-				pass
+
 
 
 def get_status(driver):
