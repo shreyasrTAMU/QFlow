@@ -63,7 +63,29 @@ flows = []
 bitrate = '?'
 
 
-def yt_session(dt, process_id, driver, threadID, directory, start_time):
+def session_decider(threadID, directory,):
+	print("Entering session_decider")
+	try:
+		while os.path.isdir(directory):
+			try:
+				shutil.rmtree(directory)	#Deletes the entire directory tree
+			except:
+				print("Error: shutil.rmtree")
+	except:
+		print("Error: os.path.isdir")
+
+		if(not os.mkdir(directory)):
+			try:
+				os.mkdir(directory)
+			except:
+				print("Error: Not able to make directory: ",directory)
+				pass
+
+	start_time = time.time()
+
+	yt_session(threadID, directory, start_time)
+
+def yt_session(threadID, directory, start_time):
     print "Entering yt_session for ",threadID
     time.sleep(0.1)
     path_to_extension = '/home/ndn3/Downloads/gighmmpiobklfepjocnamgkkbiglidom/4.17.0_0'
@@ -73,10 +95,10 @@ def yt_session(dt, process_id, driver, threadID, directory, start_time):
     chromeOptions.add_experimental_option("prefs",prefs)
     chromedriver = '/home/ndn3/Downloads/chromedriver'
     driver = webdriver.Chrome(executable_path=chromedriver, chrome_options=chromeOptions)
-    yt_open_video(dt, process_id, driver, threadID, start_time)
+    yt_open_video(driver, threadID, start_time)
 
 
-def yt_open_video(dt, process_id, driver, threadID, start_time):
+def yt_open_video(driver, threadID, start_time):
 	print "Entering yt_open_video for:",threadID
 
 	try:
@@ -92,13 +114,13 @@ def yt_open_video(dt, process_id, driver, threadID, start_time):
 			driver.switch_to.window(driver.window_handles[0])
 	except:
 		traceback.print_exc()
-		yt_open_video(dt, process_id, driver, threadID, start_time)
-
-	process_id = driver.service.process.pid
-	yt_set_vq(dt, driver, process_id, threadID, start_time, idx)
+		yt_open_video(driver, threadID, start_time)
 
 
-def yt_set_vq(dt, driver, process_id, threadID, start_time, idx):
+	yt_set_vq(driver,threadID, start_time)
+
+
+def yt_set_vq(driver,threadID, start_time):
 	print "Entering yt_set_vq for ",threadID
 
 	url_playing = driver.current_url
@@ -114,7 +136,7 @@ def yt_set_vq(dt, driver, process_id, threadID, start_time, idx):
 	try:
 		url_playing = driver.current_url
 	except:
-		yt_set_vq(dt, driver, process_id, threadID, start_time, idx)
+		yt_set_vq(driver,threadID, start_time)
 
 	while not qualityandautoplay:
 
@@ -156,132 +178,129 @@ def yt_set_vq(dt, driver, process_id, threadID, start_time, idx):
 
 
 
-	yt_session_logger(round(time.time()), dt, 0, driver, process_id, threadID, url_playing, start_time, idx,0,'initial_buffering','no dqs state')
+	yt_session_logger(round(time.time()), 0, driver, threadID, url_playing, start_time, 0,'initial_buffering','no dqs state')
 
 
 
 lock = threading.Lock()
-def yt_session_logger(start, interval, count, driver, process_id, threadID, url_playing, start_time,idx,rebufNo,state,dqs_state):
+def yt_session_logger(start, count, driver, threadID, url_playing, start_time,rebufNo,state,dqs_state):
 	print "Entering yt_session_logger for ",threadID
 
 	time.sleep(1)
 
-	try:
-
-		p = psutil.Process(driver.service.process.pid)
-		p_children = p.children(recursive=True)
-		process_id = p_children[0].pid
-
-		global flows
-		global bitrate
-		#flows = []
-		for entry in p_children:
-			test = entry.pid
-			cmd_sentense = "lsof -Pan -p " + str(test) + " -i"    #Lists information about PID such as command, user, type, node, name
-			flows.extend(cmdline(cmd_sentense))
-
-		flows = list(set(flows))	#Converts list to set (sorts and removes duplicates) and then back to a list
-
-		bitrate = find_bitrate(driver)
-		# cancel_button = driver.find_element_by_class_name('ytp-upnext-cancel')
-		# time.sleep(1)
-		# cancel_button.click()
-		if endofvideo(driver):
-			print 'REACHED END OF VIDEO '
-			yt_open_video(interval, process_id, driver, threadID, start_time)
-			time.sleep(5)
-
-
+	while not endofvideo(driver):
+		
 		try:
 
-			bufferingboolean = driver.find_element_by_class_name('buffering-mode')
-			
+			p = psutil.Process(driver.service.process.pid)
+			p_children = p.children(recursive=True)
+			process_id = p_children[0].pid
 
-			global lock
-			lock.acquire()
-			try:
-				#IF BUFFERING ################################################
-				print 'state when entering buffering: ',state
-				if state == 'initial_buffering':
-					dqs_state = "startup delay"			
+			global flows
+			global bitrate
+			#flows = []
+			for entry in p_children:
+				test = entry.pid
+				cmd_sentense = "lsof -Pan -p " + str(test) + " -i"    #Lists information about PID such as command, user, type, node, name
+				flows.extend(cmdline(cmd_sentense))
 
-				elif state == "playing" or "playing" in dqs_state:
-					rebufNo = rebufNo+1
-					#print threadID, " -> New stall"
-					if rebufNo == 1:
-						dqs_state = "first rebuffering"
+			flows = list(set(flows))	#Converts list to set (sorts and removes duplicates) and then back to a list
+			bitrate = find_bitrate(driver)
+
+			if isbuffering(driver):
+
+				global lock
+				lock.acquire()
+				try:
+					#IF BUFFERING ################################################
+					videoParametersInSeconds = '?'
+					print 'state when entering buffering: ',state
+					if state == 'initial_buffering':
+						dqs_state = "startup delay"			
+
+					elif state == "playing" or "playing" in dqs_state:
+						rebufNo = rebufNo+1
+						#print threadID, " -> New stall"
+						if rebufNo == 1:
+							dqs_state = "first rebuffering"
+						elif rebufNo > 1:
+							dqs_state = "multiple rebuffering"
+
+					state = "buffering"
+					print state
+				except:
+					traceback.print_exc()
+
+				finally:
+					lock.release()
+
+			else:
+				
+				try:
+					#IF PLAYING ##########################################################################
+					state = "playing"
+
+					test = driver.find_element_by_class_name('html5-video-player')
+					test.click()
+					test.click()
+
+					#seconds played/total video length
+					playProgress_to_TotalVideo = driver.find_element_by_class_name('ytp-play-progress').get_attribute('style').split('(')[1].split(')')[0]
+					#seconds loaded/total video length	
+					loadProgress_to_TotalVideo = driver.find_element_by_class_name('ytp-load-progress').get_attribute('style').split('(')[1].split(')')[0]
+
+					progress_bar = driver.find_element_by_class_name('ytp-progress-bar')
+					total_length_of_video = progress_bar.get_attribute('aria-valuemax')
+					seconds_loaded = float(loadProgress_to_TotalVideo) * float(total_length_of_video)	#number of seconds the video has loaded
+					seconds_played = progress_bar.get_attribute('aria-valuenow')	#number of seconds the video has played
+
+					videoParametersInSeconds = str([float(seconds_played), float(seconds_loaded)])
+
+					if rebufNo == 0:
+						dqs_state = "initial playing"
+					elif rebufNo == 1:
+						dqs_state = "first rebuffering playing"
 					elif rebufNo > 1:
-						dqs_state = "multiple rebuffering"
+						dqs_state = "multiple rebuffering playing"
 
-				state = "buffering"
-				print('BUFFERING ')
+				except:
+					traceback.print_exc()
 
-				print_fields(process_id, threadID, flows, bitrate, state, dqs_state, '?', rebufNo,  url_playing)
-				insert_into_mysql(process_id, threadID, str(flows), bitrate,state, dqs_state, '?', rebufNo)
-
-			#except:
-				#traceback.print_exc()
-
-			finally:
-				lock.release()
-			yt_session_logger(start, interval, count, driver, process_id, threadID, url_playing, start_time, idx, rebufNo,state,dqs_state)
-
+			print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoParametersInSeconds, rebufNo,  url_playing)
+			insert_into_mysql(process_id, threadID, str(flows), bitrate,state, dqs_state, videoParametersInSeconds, rebufNo)
+		
 		except:
 			#traceback.print_exc()
-			try:
-				#IF PLAYING ##########################################################################
-				state = "playing"
+			#When error in getting ports or bitrate
+			print "No clue what to do", process_id, threadID
+			sys.exit()
 
-				test = driver.find_element_by_class_name('html5-video-player')
-				test.click()
-				test.click()
+			print 'REACHED END OF VIDEO \n'
+		time.sleep(2)
 
-				#seconds played/total video length
-				playProgress_to_TotalVideo = driver.find_element_by_class_name('ytp-play-progress').get_attribute('style').split('(')[1].split(')')[0]
-				#seconds loaded/total video length	
-				loadProgress_to_TotalVideo = driver.find_element_by_class_name('ytp-load-progress').get_attribute('style').split('(')[1].split(')')[0]
-
-				progress_bar = driver.find_element_by_class_name('ytp-progress-bar')
-				max_progress = progress_bar.get_attribute('aria-valuemax')
-				seconds_loaded = float(loadProgress_to_TotalVideo) * float(max_progress)	#number of seconds the video has loaded
-				seconds_played = progress_bar.get_attribute('aria-valuenow')	#number of seconds the video has played
-
-				videoParametersInSeconds = str([float(seconds_played), float(seconds_loaded)])
-
-				if rebufNo == 0:
-					dqs_state = "initial playing"
-				elif rebufNo == 1:
-					dqs_state = "first rebuffering playing"
-				elif rebufNo > 1:
-					dqs_state = "multiple rebuffering playing"
-
-				insert_into_mysql(process_id, threadID, str(flows), bitrate, state, dqs_state, videoParametersInSeconds, rebufNo)
-				print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoParametersInSeconds, rebufNo,  url_playing)
-
-				yt_session_logger(start, interval, count, driver, process_id, threadID, url_playing, start_time, idx, rebufNo,state,dqs_state)
-
-			except:
-				traceback.print_exc()
-
-				
-	except:
-		#traceback.print_exc()
-		print "No clue what to do", process_id, threadID
-		sys.exit()
+	yt_open_video(driver, threadID, start_time)
+	time.sleep(5)
 
 
 def endofvideo(driver):
 
 	progress_bar = driver.find_element_by_class_name('ytp-progress-bar')
-	max_progress = progress_bar.get_attribute('aria-valuemax')
+	total_length_of_video = progress_bar.get_attribute('aria-valuemax')
 	seconds_played = progress_bar.get_attribute('aria-valuenow')	#number of seconds the video has played
 	print 'SECONDS PLAYED ',seconds_played
-	print 'MAX PROGRESS ', max_progress
-	if seconds_played == max_progress:
+	print 'TOTAL LENGTH OF VID ', total_length_of_video
+	if abs(int(total_length_of_video) - int(seconds_played)) < 7:
+		print 'End of video reached'
 		return True
 	else:
 		return False
 
+def isbuffering(driver):
+	try:
+		bufferingboolean = driver.find_element_by_class_name('buffering-mode')
+		return True
+	except:
+		return False
 
 def get_status(driver):
 	print("Entering get_status")
@@ -342,38 +361,6 @@ def print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoPa
 	else:
 		print '==================================================================================='
 	
-	
-
-def session_decider(process_id, driver, threadID, directory,):
-	print("Entering session_decider")
-	try:
-		while os.path.isdir(directory):
-			try:
-				shutil.rmtree(directory)	#Deletes the entire directory tree
-			except:
-				print("Error: shutil.rmtree")
-	except:
-		print("Error: os.path.isdir")
-
-		if(not os.mkdir(directory)):
-			try:
-				os.mkdir(directory)
-			except:
-				print("Error: Not able to make directory: ",directory)
-				pass
-
-	while get_status(driver) is 'Alive':
-		try:
-			print("status of driver is alive")
-			driver.quit()
-			driver.close()
-		except:
-			pass
-
-	start_time = time.time()
-	process_id = 0
-	dt = 1
-	yt_session(dt, process_id, driver, threadID, directory, start_time)
 
 def insert_into_mysql(processID, threadID, ports, bitrate, video_player_state, dqs_state, load_and_play_state, stallNo):
 	_timestamp = int(time.time())
@@ -397,8 +384,7 @@ def insert_into_mysql(processID, threadID, ports, bitrate, video_player_state, d
 
 try:
 
-	directory1 = '/home/nuc4/Documents/seleniumstuff/1'
-	directory2 = '/home/nuc4/Documents/seleniumstuff/2'
+	directory = '/home/nuc4/Documents/seleniumstuff/1'
 
 
 	if( len(sys.argv) !=1 ):
@@ -408,7 +394,7 @@ try:
  
  	threadName.strip()
 	threadName = str(threadName)
-	session_decider("0","0",threadName,directory1)
+	session_decider(threadName,directory)
 
 
 except Exception, exc:
