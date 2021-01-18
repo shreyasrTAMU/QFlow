@@ -102,14 +102,13 @@ def yt_open_video(dt, process_id, driver, threadID, start_time):
 
 def yt_set_vq(dt, driver, process_id, threadID, start_time, idx):
 	print "Entering yt_set_vq for ",threadID
-	numberoftimes_vq = 0
+
 	url_playing = driver.current_url
-	numberoftimes_vq += 1
+
 	qualityandautoplay = False
 	try:
-		elem = driver.find_element_by_class_name('videoAdUi')	#If there is an advertisement
 		time.sleep(1)
-		ad_skip_button = driver.find_element_by_css_selector('.videoAdUiSkipButton.videoAdUiAction')
+		ad_skip_button = driver.find_element_by_css_selector('ytp-ad-text')
 		ad_skip_button.click()
 
 	except:
@@ -136,28 +135,32 @@ def yt_set_vq(dt, driver, process_id, threadID, start_time, idx):
 			quality_button[0].click()
 			time.sleep(1)
 
-			setting_button = driver.find_element_by_css_selector('.ytp-button.ytp-settings-button')
-			setting_button.click()
-			time.sleep(1)
-			try:
-				print 'Trying old autoplay button'
-				autoplay_option_button = driver.find_element_by_xpath('//div[text()="Autoplay"]')
-				autoplay_option_button.click()
-			except:
-				print 'New youtube autoplay button'
-				autoplay_option_button = driver.find_element_by_css_selector('div.ytp-autonav-toggle-button')
+			# setting_button = driver.find_element_by_css_selector('.ytp-button.ytp-settings-button')
+			# setting_button.click()
+			# time.sleep(1)
+			# try:
+			# 	print 'Trying old autoplay button'
+			# 	autoplay_option_button = driver.find_element_by_xpath('//div[text()="Autoplay"]')
+			# 	autoplay_option_button.click()
+
+			# except:
+			# 	print 'New youtube autoplay button'
+			# 	autoplay_option_button = driver.find_element_by_css_selector('div.ytp-autonav-toggle-button')
+			# 	if autoplay_option_button.get_attribute('checked'):
+			# 		autoplay_option_button.click()
 			
-			autoplay_option_button.click()
 			time.sleep(1)
 
 			qualityandautoplay = True
 		except:
-			traceback.print_exc()
-			numberoftimes_vq += 1
+			print 'Trying settings button again '
+			time.sleep(1)
+			#traceback.print_exc()
 
 
-	yt_logger = Timer(dt, yt_session_logger, [round(time.time()), dt, 0, driver, process_id, threadID, url_playing, start_time, idx,0,'initial_buffering','no dqs state'])
-	yt_logger.start()
+
+	yt_session_logger(round(time.time()), dt, 0, driver, process_id, threadID, url_playing, start_time, idx,0,'initial_buffering','no dqs state')
+
 
 
 lock = threading.Lock()
@@ -184,17 +187,15 @@ def yt_session_logger(start, interval, count, driver, process_id, threadID, url_
 		flows = list(set(flows))	#Converts list to set (sorts and removes duplicates) and then back to a list
 
 		bitrate = find_bitrate(driver)
-		cancel_button = driver.find_element_by_class_name('ytp-upnext-cancel')
-		time.sleep(1)
-		cancel_button.click()
+		# cancel_button = driver.find_element_by_class_name('ytp-upnext-cancel')
+		# time.sleep(1)
+		# cancel_button.click()
+		if endofvideo(driver):
+			print 'REACHED END OF VIDEO '
+			yt_open_video(interval, process_id, driver, threadID, start_time)
+			time.sleep(5)
 
-		yt_logger = Timer(interval - (ticks-start-count*interval), yt_open_video, [interval, process_id, driver, threadID, start_time])
-		yt_logger.start()
-		time.sleep(2)
 
-	except:
-		#Comes here when
-		#traceback.print_exc()
 		try:
 
 			bufferingboolean = driver.find_element_by_class_name('buffering-mode')
@@ -227,8 +228,7 @@ def yt_session_logger(start, interval, count, driver, process_id, threadID, url_
 
 			finally:
 				lock.release()
-			yt_logger = Timer(interval - (ticks-start-count*interval), yt_session_logger, [start, interval, count, driver, process_id, threadID, url_playing, start_time, idx, rebufNo,state,dqs_state])
-			yt_logger.start()
+			yt_session_logger(start, interval, count, driver, process_id, threadID, url_playing, start_time, idx, rebufNo,state,dqs_state)
 
 		except:
 			#traceback.print_exc()
@@ -262,15 +262,29 @@ def yt_session_logger(start, interval, count, driver, process_id, threadID, url_
 				insert_into_mysql(process_id, threadID, str(flows), bitrate, state, dqs_state, videoParametersInSeconds, rebufNo)
 				print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoParametersInSeconds, rebufNo,  url_playing)
 
-				yt_logger = Timer(interval - (ticks-start-count*interval), yt_session_logger, [start, interval, count, driver, process_id, threadID, url_playing, start_time, idx, rebufNo,state,dqs_state])
-				yt_logger.start()
+				yt_session_logger(start, interval, count, driver, process_id, threadID, url_playing, start_time, idx, rebufNo,state,dqs_state)
 
-				
 			except:
 				traceback.print_exc()
-				print "No clue what to do", process_id, threadID
-				sys.exit()
 
+				
+	except:
+		traceback.print_exc()
+		print "No clue what to do", process_id, threadID
+		sys.exit()
+
+
+def endofvideo(driver):
+
+	progress_bar = driver.find_element_by_class_name('ytp-progress-bar')
+	max_progress = progress_bar.get_attribute('aria-valuemax')
+	seconds_played = progress_bar.get_attribute('aria-valuenow')	#number of seconds the video has played
+	print 'SECONDS PLAYED ',seconds_played
+	print 'MAX PROGRESS ', max_progress
+	if seconds_played == max_progress:
+		return True
+	else:
+		return False
 
 
 def get_status(driver):
@@ -325,7 +339,7 @@ def print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoPa
 	print 'dqs state: ',dqs_state
 	print 'video parameters in seconds: ',videoParametersInSeconds
 	print 'number of rebuffering: ',rebufNo
-	print 'url_playing: ',url_playing
+	# print 'url_playing: ',url_playing
 	
 	if state == "playing":
 		print "----------------------------------------------------------------------------"
@@ -363,7 +377,7 @@ def session_decider(process_id, driver, threadID, directory,):
 	start_time = time.time()
 	process_id = 0
 	dt = 1
-	thread.start_new_thread(yt_session, (dt, process_id, driver, threadID, directory, start_time))
+	yt_session(dt, process_id, driver, threadID, directory, start_time)
 
 def insert_into_mysql(processID, threadID, ports, bitrate, video_player_state, dqs_state, load_and_play_state, stallNo):
 	_timestamp = int(time.time())
@@ -398,8 +412,8 @@ try:
  
  	threadName.strip()
 	threadName = str(threadName)
-	t1 = threading.Thread(target=session_decider, args = ("0","0",threadName,directory1))
-	t1.start()
+	session_decider("0","0",threadName,directory1)
+
 
 except Exception, exc:
     print exc
