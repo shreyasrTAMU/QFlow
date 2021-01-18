@@ -16,9 +16,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from subprocess import check_output
 
-from array import *
 from urllib2 import urlopen
-from constants import *
 from random import randrange
 from threading import Timer
 from selenium import webdriver
@@ -108,11 +106,11 @@ def yt_set_vq(dt, driver, process_id, threadID, start_time, idx):
 	qualityandautoplay = False
 	try:
 		time.sleep(1)
-		ad_skip_button = driver.find_element_by_css_selector('ytp-ad-text')
-		ad_skip_button.click()
+		button = driver.find_element_by_class_name('ytp-ad-skip-button-container')
+		button.click()
 
 	except:
-		pass
+		print 'Did not skip ad'
 	try:
 		url_playing = driver.current_url
 	except:
@@ -133,7 +131,7 @@ def yt_set_vq(dt, driver, process_id, threadID, start_time, idx):
 			time.sleep(1)
 			quality_button = driver.find_elements_by_css_selector('div.ytp-menuitem-label')	#Selects highest quality possible of video 
 			quality_button[0].click()
-			time.sleep(1)
+			time.sleep(2)
 
 			# setting_button = driver.find_element_by_css_selector('.ytp-button.ytp-settings-button')
 			# setting_button.click()
@@ -148,8 +146,7 @@ def yt_set_vq(dt, driver, process_id, threadID, start_time, idx):
 			# 	autoplay_option_button = driver.find_element_by_css_selector('div.ytp-autonav-toggle-button')
 			# 	if autoplay_option_button.get_attribute('checked'):
 			# 		autoplay_option_button.click()
-			
-			time.sleep(1)
+
 
 			qualityandautoplay = True
 		except:
@@ -166,8 +163,7 @@ def yt_set_vq(dt, driver, process_id, threadID, start_time, idx):
 lock = threading.Lock()
 def yt_session_logger(start, interval, count, driver, process_id, threadID, url_playing, start_time,idx,rebufNo,state,dqs_state):
 	print "Entering yt_session_logger for ",threadID
-	ticks = time.time()
-	ticks_int = int(time.time())
+
 	time.sleep(1)
 
 	try:
@@ -269,7 +265,7 @@ def yt_session_logger(start, interval, count, driver, process_id, threadID, url_
 
 				
 	except:
-		traceback.print_exc()
+		#traceback.print_exc()
 		print "No clue what to do", process_id, threadID
 		sys.exit()
 
