@@ -187,7 +187,7 @@ def yt_session_logger(start, count, driver, threadID, url_playing, start_time,re
 	print "Entering yt_session_logger for ",threadID
 
 	time.sleep(1)
-
+	last5secondsplayed = []
 	while not endofvideo(driver):
 		
 		try:
@@ -254,6 +254,12 @@ def yt_session_logger(start, count, driver, threadID, url_playing, start_time,re
 					seconds_loaded = float(loadProgress_to_TotalVideo) * float(total_length_of_video)	#number of seconds the video has loaded
 					seconds_played = progress_bar.get_attribute('aria-valuenow')	#number of seconds the video has played
 
+
+					if videopaused(last5secondsplayed, seconds_played):
+						print 'Video has been paused'
+						test = driver.find_element_by_class_name('html5-video-player')
+						test.click()
+
 					videoParametersInSeconds = str([float(seconds_played), float(seconds_loaded)])
 
 					if rebufNo == 0:
@@ -294,6 +300,14 @@ def endofvideo(driver):
 		return True
 	else:
 		return False
+
+def videopaused(last5secondsplayed, seconds_played):
+	if len(last5secondsplayed) >= 5:
+		last5secondsplayed.pop(0)
+	last5secondsplayed.append(seconds_played)
+
+	return last5secondsplayed.count(last5secondsplayed[0]) == len(last5secondsplayed)
+
 
 def isbuffering(driver):
 	try:
