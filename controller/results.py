@@ -8,9 +8,8 @@ import numpy
 import MySQLdb
 import time
 import datetime
-import threading
-import random
-import pandas as pd
+
+
 
 hostIP = "127.0.0.1"     # Database server IP
 username = "root"
@@ -63,10 +62,12 @@ def get_event_ts(threadID,bufID,event):
 
 def get_prev_state(threadID):
     try:
-        results = execute_db("SELECT QoE, buffer_state, play_state FROM flow_bazaar.results_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID,))[0]
+        results = execute_db("SELECT QoE, buffer_state, play_state FROM flow_bazaar.results_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID,))
 
         if not results:
             results = -1
+        else:
+            results = results[0]
         return results
 
     except MySQLdb.Error, e:
@@ -88,7 +89,7 @@ def get_youtube_stalls_10sec_ago(threadID, time_10sec_back):
 
 def get_youtube_specific(threadID):
     try:
-        results = execute_db("SELECT load_and_play_state, video_player_state, bitrate, stallNo FROM flow_bazaar.client_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID))
+        results = execute_db("SELECT ports, load_and_play_state, video_player_state, bitrate, stallNo, timestamp FROM flow_bazaar.client_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID))
 
         if not results:
             print "No new youtube state"
@@ -99,46 +100,19 @@ def get_youtube_specific(threadID):
         print "Error %d: %s" % (e.args[0],e.args[1])
 
 
-def get_prev_ts_client(threadID):
-    try:
-        results = execute_db("SELECT timestamp FROM flow_bazaar.client_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID,))[0][0]
+# def get_queue(IP_Address,processID):    #Check output when policy table is empty
+#     _timestamp = int(time.time())
+#     lb_timestamp = _timestamp - time_inbetween_runs
 
-        if not results:
-            results = 0
-        return results
+#     try:
+#         results = execute_db("SELECT queueID FROM flow_bazaar.policy_table WHERE IPAddress = '{}' AND processID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(IP_Address, processID))
+#         if(not results):
+#             print "No new queue."
+#             results = 0 #NULL 
+#         return results
 
-    except MySQLdb.Error, e:
-        print "Error %d: %s" % (e.args[0],e.args[1])
-
-
-def get_ports(threadID):
-    try:
-
-        results = execute_db("SELECT ports FROM flow_bazaar.client_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID,))
-
-        if(not results):
-            print "No new youtube state"
-            results = 0
-        return results
-
-    except MySQLdb.Error, e:
-        print "Error %d: %s" % (e.args[0],e.args[1])
-
-
-
-def get_queue(IP_Address,processID):    #Check output when policy table is empty
-    _timestamp = int(time.time())
-    lb_timestamp = _timestamp - time_inbetween_runs
-
-    try:
-        results = execute_db("SELECT queueID FROM flow_bazaar.policy_table WHERE IPAddress = '{}' AND processID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(IP_Address, processID))
-        if(not results):
-            print "No new queue."
-            results = 0 #NULL 
-        return results
-
-    except MySQLdb.Error, e:
-        print "Error %d: %s" % (e.args[0],e.args[1])
+#     except MySQLdb.Error, e:
+#         print "Error %d: %s" % (e.args[0],e.args[1])
 
 
 def get_process_id(threadID):
@@ -174,11 +148,12 @@ def get_client_threadIDs():
 
 def get_latest_run():
     try:
-        results = execute_db("Select runID from flow_bazaar.results_table order by timestamp DESC limit 1;")[0][0]
-        print results
+        results = execute_db("Select runID from flow_bazaar.results_table order by timestamp DESC limit 1;")
+        
         if(not results):
             results = 0
-
+        else:
+            results = results[0][0]
         return results
 
     except MySQLdb.Error, e:
@@ -222,17 +197,16 @@ while True:
                 stallDur = 0
 
                 #Getting data from client table    ##############################
-                ports = get_ports(threadID)[0] #Gets ports from client table
 
-                currentTime = int(get_prev_ts_client(threadID))
-                time_10sec_back = currentTime - time_inbetween_runs  
-                #print '     currentTime - time_inbetween_runs ', time_10sec_back
-                fields = get_youtube_specific(threadID)[0]  #Gets other fields from client table - load_and_play_state, video_player_state, bitrate, stallNo
+                fields = get_youtube_specific(threadID)[0]  #Gets latest fields from client table - ports,load_and_play_state, video_player_state, bitrate, stallNo, timestamp
                 print '     fields', fields
-                load_and_play_state = fields[0]
-                play_state = fields[1]
-                bitrate = fields[2]
-                stall = int(fields[3])
+                ports = fields[0]
+                load_and_play_state = fields[1]
+                play_state = fields[2]
+                bitrate = fields[3]
+                stall = int(fields[4])
+                currentTime = int(fields[5])
+                time_10sec_back = currentTime - time_inbetween_runs  
 
                 if get_youtube_stalls_10sec_ago(threadID,time_10sec_back) == 0:   #Gets stall number from client table with timestamp less than time_10sec_back
                     stalls_10sec_ago = 0
@@ -241,7 +215,7 @@ while True:
                 print '     stalls_10sec_ago ', stalls_10sec_ago
 
 
-                #Getting data from results table   ########################
+                #Getting previous data from results table   ########################
 
                 prev_result_state = get_prev_state(threadID)   #Getting QoE, buffer_state, play_state from results table
                 print '     prev_result_state', prev_result_state
