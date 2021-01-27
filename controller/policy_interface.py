@@ -89,10 +89,8 @@ def fetch_run(run, ip=None, thread=None):   #read a run from the flowbazaar data
         )
 
     result = execute_db(
-        "SELECT {} FROM flow_bazaar.results_table WHERE runID = '{}' and threadID = '{}';".format(
-            ', '.join(run_cols), thread
-        )
-    )
+        "SELECT {} FROM flow_bazaar.results_table WHERE runID = '{}' and threadID = '{}';".format(', '.join(run_cols), run,thread))
+
     if len(result) > 0:
         return result[0]
     return None

@@ -35,7 +35,7 @@ while True:
     print 'steps: ',steps
     # wait decision period all but first time
     if steps > 1:
-        sleep(max(0, PERIOD - toc + tic))
+        sleep(PERIOD)
 
     tic = time()
 
