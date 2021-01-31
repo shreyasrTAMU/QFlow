@@ -37,8 +37,6 @@ while True:
     if steps > 1:
         sleep(PERIOD)
 
-    tic = time()
-
     print('Setting policy for run: ',PI.latest_run())
     example = PI.fetch_run(PI.latest_run())
     #print example
@@ -51,7 +49,7 @@ while True:
     for i, client in enumerate(example):
 
         if '192.168.1.130' in client[PI.run_cols.index('threadID')]:
-            queueID = 30            #Low queue
+            queueID = 30            #Low queue 9mbit
         else:
             queueID = 10
 
@@ -68,7 +66,6 @@ while True:
             client[PI.run_cols.index('Stalls')]
 
         )        
-    toc = time()
 
 
 
