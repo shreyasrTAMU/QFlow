@@ -23,8 +23,8 @@ def execute_db(sql_script):
         cur.execute(sql_script)
         results = cur.fetchall()
         return results
-    except MySQLdb.Error as e:
-        print("Error {}: {}".format(e.args[0],e.args[1]))
+    except:
+        traceback.print_exc()
 
 
 run_cols = [    #Columns in results table

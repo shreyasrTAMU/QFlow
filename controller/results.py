@@ -28,8 +28,8 @@ def execute_db(sql_script):
         cur.execute(sql_script)
         results = cur.fetchall()
         return results
-    except MySQLdb.Error as e:
-        print("Error {}: {}".format(e.args[0],e.args[1]))
+    except:
+        traceback.print_exc()
 
 def insert_into_db(runID, processID,threadID, ports, buffer_state, play_state, bitrate, currentStall, stallDur, prev_QoE, prev_buffer_state, prev_play_state, queueID, QoE):
     timestamp = int(time.time())
@@ -57,8 +57,8 @@ def get_event_ts(threadID,processID, stall,event,order):
         results = results[0][0]
         return int(results)
 
-    except MySQLdb.Error, e:
-        print "Error %d: %s" % (e.args[0],e.args[1])
+    except:
+        traceback.print_exc()
 
 
 def get_prev_state(threadID):
@@ -71,8 +71,8 @@ def get_prev_state(threadID):
             results = results[0]
         return results
 
-    except MySQLdb.Error, e:
-        print "Error %d: %s" % (e.args[0],e.args[1])
+    except:
+        traceback.print_exc()
 
 
 def get_youtube_stalls_10sec_ago(threadID, time_10sec_back):
@@ -86,8 +86,8 @@ def get_youtube_stalls_10sec_ago(threadID, time_10sec_back):
             results = results[0][0]
         return results
 
-    except MySQLdb.Error, e:
-        print "Error %d: %s" % (e.args[0],e.args[1])
+    except:
+        traceback.print_exc()
 
 
 def get_youtube_specific(threadID):
@@ -99,8 +99,8 @@ def get_youtube_specific(threadID):
             results = 0
         return results
 
-    except MySQLdb.Error, e:
-        print "Error %d: %s" % (e.args[0],e.args[1])
+    except:
+        traceback.print_exc()
 
 
 def get_process_id(threadID):
@@ -117,8 +117,8 @@ def get_process_id(threadID):
         else:
             results = results[0][0]
         return results
-    except MySQLdb.Error, e:
-        print "Error %d: %s" % (e.args[0],e.args[1])
+    except:
+        traceback.print_exc()
 
 
 def get_client_threadIDs():
@@ -127,15 +127,15 @@ def get_client_threadIDs():
 
     try:
         results = execute_db("SELECT threadID FROM flow_bazaar.client_table WHERE timestamp >= '{}' ORDER BY timestamp DESC;".format(lb_timestamp))
+
         if(not results):
             print "No new users/data"
             results = 0
-        else:
-            results = results[0]
+
         return results
 
-    except MySQLdb.Error, e:
-        print "Error %d: %s" % (e.args[0],e.args[1])
+    except:
+        traceback.print_exc()
 
 def get_latest_run():
     try:
@@ -147,8 +147,8 @@ def get_latest_run():
             results = results[0][0]
         return results
 
-    except MySQLdb.Error, e:
-        print "Error %d: %s" % (e.args[0],e.args[1])
+    except:
+        traceback.print_exc()
 
 def geteventStartEnd(stall):
 
@@ -165,7 +165,10 @@ def geteventStartEnd(stall):
 def QoEfromstalls(threadID, processID, stall, eventStart, eventEnd, QoE_stallDur):
     QoE, stallDur = QoE_stallDur[0], QoE_stallDur[1]
     tsStallStart, tsStallEnd = get_event_ts(threadID,processID, stall,eventStart,'ASC'), get_event_ts(threadID, processID, stall, eventEnd, 'DESC') #Gets timestamps of when eventStart and eventEnd occurred
+    print '     tsStallStart: ',tsStallStart
+    print '     tsStallEnd: ',tsStallEnd
     if tsStallEnd == -1 and tsStallStart > time_10sec_back:   #Buffering has started in the past 10 sec and is still going on
+        print '     Buffering has started in the past 10 sec and is still going on'
         tsStallEnd = currentTime #int(get_event_end_ts(IP_Address,processID,stall,eventStart))
 
     if tsStallEnd > time_10sec_back:    #If buffering ended in the last 10 sec
@@ -173,7 +176,6 @@ def QoEfromstalls(threadID, processID, stall, eventStart, eventEnd, QoE_stallDur
             tsStallStart = time_10sec_back
     #print tsStallStart, tsStallEnd, time_10sec_back
         stallDur = tsStallEnd - tsStallStart + 1
-
 
         if stallDur > 10:
             stallDur = 10
@@ -192,15 +194,15 @@ runID = -1
 while True:
 
     print 'Waiting for run'
-    time.sleep(time_inbetween_runs)
     runID = int(get_latest_run()) + 1  #Returns 0 if no data in results table
     print 'runID: ',runID
     threadIDs = get_client_threadIDs() #Get threadIDs >20sec back from client table
-
+    
     if( threadIDs != 0): #data exists in client table
-        Unique_threadID = list(set(threadIDs))
-
-        for threadID in Unique_threadID:
+        Unique_threadIDs = list(set(threadIDs))
+        print Unique_threadIDs
+        for threadID in Unique_threadIDs:
+            threadID = threadID[0]  #threadID is of a tuple of form ('xxdf',)
             processID = get_process_id(threadID) # processid corresponding to threadidfrom client table
             print threadID
             try:
@@ -210,7 +212,8 @@ while True:
                 #Getting data from client table    ##############################
                 ################################
 
-                fields = get_youtube_specific(threadID)[0]  #Gets latest fields from client table - ports,load_and_play_state, video_player_state, bitrate, stallNo, timestamp
+                fields = get_youtube_specific(threadID)  #Gets latest fields from client table - ports,load_and_play_state, video_player_state, bitrate, stallNo, timestamp
+                fields = fields[0]
                 #print '     fields', fields
                 ports, load_and_play_state, play_state, bitrate, stall, currentTime = [fields[i] for i in range(len(fields))]
 
@@ -298,4 +301,5 @@ while True:
 
             print '-----------------------------------------------------'
 
+    time.sleep(time_inbetween_runs)
     print '========================================================================================'
