@@ -368,6 +368,7 @@ def print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoPa
 	print 'dqs state: ',dqs_state
 	print 'video parameters in seconds: ',videoParametersInSeconds
 	print 'number of rebuffering: ',rebufNo
+	print 'timestamp: ',time.time()
 	# print 'url_playing: ',url_playing
 	
 	if state == "playing":
