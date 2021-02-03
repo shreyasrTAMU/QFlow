@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines.deepq.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
-from virtual.virtual_env import VideoStreamEnv
+from virtual_env import VideoStreamEnv
 from stable_baselines import DQN
 import pickle
 
@@ -39,19 +39,19 @@ reward_list = []
 
 action = 0
 _states = 0
-a = 0
+actionindex = 0
 for i in range (1): #episodes
     obs = env.reset()
     avg_qoe = 0
     for t in range(180):  # timesteps for each episode (TTL)
-        obs, rewards, dones, info = env.step(actions[a])
-        a = a + 1 
-        if(a == 15):
-            a = 0
+        obs, rewards, dones, info = env.step(actions[actionindex])
+        actionindex = actionindex + 1 
+        if(actionindex == 16):
+            actionindex = 0
         avg_qoe = avg_qoe+(rewards)
         reward_list.append(rewards)
-        print("avg_qoe:",rewards)
-        print("a: ", a)
+        print("total avg_qoe:",rewards)
+        print('-------------------------------------------------------------------')
         file = open('rewards.txt', 'a')
         file.write(str(rewards))
         file.write(',')

@@ -1,4 +1,3 @@
-#policy_interface
 
 # pip install "mysqlclient==1.3.12"
 import MySQLdb
@@ -27,23 +26,22 @@ def execute_db(sql_script):
         traceback.print_exc()
 
 
-run_cols = [    #Columns in results table
-    'threadID', 
-    'processID', 
-    # 'runID', 
-    'timestamp', 
+run_cols = [    #Columns in results table 
+    'runID', 
+    'processID',
+    'threadID',
     'ports', 
-    'buffer_state', 
     'play_state', 
     'bitrate', 
     'Stalls', 
     'stallDur', 
+    'prev_QoE',
+    'prev_play_state',
+    'prev_buffer_state', 
+    'buffer_state',
     'queueID',
-    'prev_QoE', 
-    'QoE', 
-    'prev_buffer_state' 
-    # 'prev_QoE', 
-    # 'prev_play_state'
+    'QoE',
+    'timestamp' 
 ]
 
 def client_id(ip, thread):
@@ -65,11 +63,6 @@ def latest_run():   #get the highest-value runID in the flowbazaar database
         return 0
 
 
-def first_run():    #get the minum-value runID in the flowbazaar database
-    return int(execute_db(
-        "SELECT MIN(runID) from flow_bazaar.results_table"
-    )[0][0])
-
 
 def fetch_latest_state(ip=None, thread=None):   #get the latest state of a client
     return execute_db(
@@ -79,21 +72,18 @@ def fetch_latest_state(ip=None, thread=None):   #get the latest state of a clien
     )[0]
 
 
-def fetch_run(run, ip=None, thread=None):   #read a run from the flowbazaar database
+def fetch_run(run):   #read a run from the flowbazaar database
 
-    if ip is None:
-        return execute_db(
-            "SELECT {} FROM flow_bazaar.results_table WHERE runID = {} ORDER BY threadID ASC;".format(
-                ', '.join(run_cols), run
-            )
-        )
+    try:
+        result = execute_db(
+            "SELECT * FROM flow_bazaar.results_table WHERE runID = '{}';".format(run, ))
 
-    result = execute_db(
-        "SELECT {} FROM flow_bazaar.results_table WHERE runID = '{}' and threadID = '{}';".format(', '.join(run_cols), run,thread))
-
-    if len(result) > 0:
-        return result[0]
-    return None
+        #print('RESULT: ',result)
+        if len(result) > 0:
+            return result
+        return None
+    except:
+        traceback.print_exc()
 
 queues = (30, 10)
 def write_assignment(var_processID, var_threadID, var_ports, var_play_state, var_prev_buffer_state, var_buffer_state, var_QoE, var_highQ, var_queue, var_Stalls):   #Assign flows to queues

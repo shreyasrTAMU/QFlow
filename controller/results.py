@@ -45,7 +45,7 @@ def insert_into_db(runID, processID,threadID, ports, buffer_state, play_state, b
         traceback.print_exc()
 
 
-def get_event_ts(threadID,processID, stall,event,order):
+def get_event_ts(threadID,processID, stall,event,order):    #order will always be ASC
     try:
         
         results = execute_db("SELECT timestamp FROM flow_bazaar.client_table WHERE threadID = '{}' AND processID = {} AND stallNo = '{}' AND dqs_state = '{}' ORDER BY timestamp {} LIMIT 1;".format(threadID,processID, stall,event,order))
@@ -278,7 +278,7 @@ while True:
 
                         QoE_stallDur = QoEfromstalls(threadID, processID, itr+1, eventStart, eventEnd, QoE_stallDur, time_10sec_back)
 
-                        if stallDur + QoE_stallDur[1] > 10:
+                        if stallDur + QoE_stallDur[1] > 10: #stallDur is previous stallDur 
                             QoE_stallDur[1] = 10
 
                         QoE, stallDur = QoE_stallDur[0], QoE_stallDur[1]
