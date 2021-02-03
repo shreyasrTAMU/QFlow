@@ -214,6 +214,8 @@ def yt_session_logger(start, count, driver, threadID, url_playing, start_time,re
 				try:
 					#IF BUFFERING ################################################
 					videoParametersInSeconds = '?'
+					[seconds_played, seconds_loaded] = getsecondsplayedloaded(driver)
+					videoParametersInSeconds = str([float(seconds_played), float(seconds_loaded)])
 					print 'state when entering buffering: ',state
 					if state == 'initial_buffering':
 						dqs_state = "startup delay"			
@@ -245,15 +247,10 @@ def yt_session_logger(start, count, driver, threadID, url_playing, start_time,re
 					test.click()
 
 					#seconds played/total video length
-					playProgress_to_TotalVideo = driver.find_element_by_class_name('ytp-play-progress').get_attribute('style').split('(')[1].split(')')[0]
+					#playProgress_to_TotalVideo = driver.find_element_by_class_name('ytp-play-progress').get_attribute('style').split('(')[1].split(')')[0]
 					#seconds loaded/total video length	
-					loadProgress_to_TotalVideo = driver.find_element_by_class_name('ytp-load-progress').get_attribute('style').split('(')[1].split(')')[0]
-
-					progress_bar = driver.find_element_by_class_name('ytp-progress-bar')
-					total_length_of_video = progress_bar.get_attribute('aria-valuemax')
-					seconds_loaded = float(loadProgress_to_TotalVideo) * float(total_length_of_video)	#number of seconds the video has loaded
-					seconds_played = progress_bar.get_attribute('aria-valuenow')	#number of seconds the video has played
-
+					
+					[seconds_played, seconds_loaded] = getsecondsplayedloaded(driver)
 
 					if videopaused(last5secondsplayed, seconds_played):
 						print 'Video has been paused'
@@ -316,6 +313,15 @@ def isbuffering(driver):
 	except:
 		return False
 
+def getsecondsplayedloaded(driver):
+	loadProgress_to_TotalVideo = driver.find_element_by_class_name('ytp-load-progress').get_attribute('style').split('(')[1].split(')')[0]
+
+	progress_bar = driver.find_element_by_class_name('ytp-progress-bar')
+	total_length_of_video = progress_bar.get_attribute('aria-valuemax')
+	seconds_loaded = float(loadProgress_to_TotalVideo) * float(total_length_of_video)	#number of seconds the video has loaded
+	seconds_played = progress_bar.get_attribute('aria-valuenow')	#number of seconds the video has played
+	return [seconds_played,seconds_loaded]
+
 def get_status(driver):
 	print("Entering get_status")
 	try:
@@ -368,7 +374,7 @@ def print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoPa
 	print 'dqs state: ',dqs_state
 	print 'video parameters in seconds: ',videoParametersInSeconds
 	print 'number of rebuffering: ',rebufNo
-	print 'timestamp: ',time.time()
+	print 'timestamp: ',int(time.time())
 	# print 'url_playing: ',url_playing
 	
 	if state == "playing":
