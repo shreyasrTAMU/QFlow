@@ -95,7 +95,7 @@ class Command:
             self.retries = self.retries + 1
             print "Retry sending command -> ", self.retries
 
-    def timerCB(cmdList):
+    def timerCB(self,cmdList):
         print "Inside timer callback!"
         #Timeout! Flush command list
         for cmdObj in cmdList:
@@ -178,7 +178,6 @@ class SimpleSwitch13(app_manager.RyuApp):
       	myCmd = Command(FB_TC_CMD, cmdStr)
       	myCmd.send(datapath)
 
-        flowNo = 1
         query = ("SELECT DISTINCT threadID FROM `policy_table`")
         cursor.execute(query)
         threadIDs = cursor.fetchall()  #result is of the form [(x,),(y,)]

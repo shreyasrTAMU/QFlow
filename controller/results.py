@@ -155,23 +155,26 @@ def geteventStartEnd(stall):
     if stall > 1:
         eventStart = 'multiple rebuffering'
         eventEnd = 'multiple rebuffering playing'
-        print '       >1 present stalls'
+        #print '       >1 present stalls'
     else:
         eventStart = 'first rebuffering'
         eventEnd = 'first rebuffering playing'
-        print '      There is 1 present stall'
+        #print '      There is 1 present stall'
     return eventStart,eventEnd
 
-def QoEfromstalls(threadID, processID, stall, eventStart, eventEnd, QoE_stallDur):
+def QoEfromstalls(threadID, processID, stall, eventStart, eventEnd, QoE_stallDur, time_10sec_back):
     QoE, stallDur = QoE_stallDur[0], QoE_stallDur[1]
-    tsStallStart, tsStallEnd = get_event_ts(threadID,processID, stall,eventStart,'ASC'), get_event_ts(threadID, processID, stall, eventEnd, 'DESC') #Gets timestamps of when eventStart and eventEnd occurred
-    print '     tsStallStart: ',tsStallStart
-    print '     tsStallEnd: ',tsStallEnd
+
+    tsStallStart, tsStallEnd = get_event_ts(threadID,processID, stall,eventStart,'ASC'), get_event_ts(threadID, processID, stall, eventEnd, 'ASC') #Gets timestamps of when eventStart and eventEnd occurred
+    print '     time10secback: ',time_10sec_back
+    print '     eventstart: ',eventStart, '    ',tsStallStart
+    print '     eventend: ',eventEnd,'     ',tsStallEnd
     if tsStallEnd == -1 and tsStallStart > time_10sec_back:   #Buffering has started in the past 10 sec and is still going on
         print '     Buffering has started in the past 10 sec and is still going on'
-        tsStallEnd = currentTime #int(get_event_end_ts(IP_Address,processID,stall,eventStart))
-
+        tsStallEnd = time_10sec_back + 10 #int(get_event_end_ts(IP_Address,processID,stall,eventStart))
+        print '     ==>tsstallend: ',tsStallEnd
     if tsStallEnd > time_10sec_back:    #If buffering ended in the last 10 sec
+        print '     Buffering ended in last 10sec'
         if tsStallStart < time_10sec_back:    #If buffering began before last 10 sec too
             tsStallStart = time_10sec_back
     #print tsStallStart, tsStallEnd, time_10sec_back
@@ -180,11 +183,14 @@ def QoEfromstalls(threadID, processID, stall, eventStart, eventEnd, QoE_stallDur
         if stallDur > 10:
             stallDur = 10
 
-        print threadID, ": Stall duration -> ", stallDur
+        print '     ',threadID, ': QoE -> ',QoE, ',stall -> ',stall, ',Stall duration -> ', stallDur
         QoE = interruptDQS(QoE, stall, stallDur)[-1]
-    else:
-        print "Playback without stalls!"
+
+    else:   #event ended more than 10sec back
+        print "     Playback without stalls!"
+        print '     ',threadID, ': QoE -> ',QoE, ',stall -> ',stall, ',Stall duration -> ', stallDur
         QoE = playbackDQS(QoE, stall, 10-stallDur)[-1]
+
     
     QoE_stallDur = [QoE, stallDur]
     return QoE_stallDur
@@ -219,6 +225,7 @@ while True:
 
                 stall = int(stall)
                 currentTime = int(currentTime)
+                #print '     Latest time current time: ',currentTime
                 time_10sec_back = currentTime - time_inbetween_runs  
 
                 stalls_10sec_ago = int(get_youtube_stalls_10sec_ago(threadID,time_10sec_back))  #Gets  stall number from client table with latest timestamp less than time_10sec_back
@@ -237,8 +244,8 @@ while True:
 
                 if prev_buffer_state < 0:
                     prev_buffer_state = 0
-                print '     prev_buffer_state: ',prev_buffer_state
-                print '     prev_play_state: ',prev_play_state
+                #print '     prev_buffer_state: ',prev_buffer_state
+                #print '     prev_play_state: ',prev_play_state
                 print "     Prev QoE -> ", prev_QoE
 
                 if stalls_10sec_ago > stall:  #If for some reason number of stalls 10 sec back > present number of stalls
@@ -260,26 +267,27 @@ while True:
                     QoE = playbackDQS(prev_QoE, 1, 10)[-1]
 
                 elif stall == stalls_10sec_ago:   #No new stalls
-
-                    QoE_stallDur = QoEfromstalls(threadID, processID, stall, eventStart, eventEnd, QoE_stallDur)
+                    print '     No new stalls'
+                    QoE_stallDur = QoEfromstalls(threadID, processID, stall, eventStart, eventEnd, QoE_stallDur, time_10sec_back)
                     QoE, stallDur = QoE_stallDur[0], QoE_stallDur[1]
             
                 elif stall > stalls_10sec_ago:    #Stall(s) has occurred in the past 10 sec
 
-                    print "   New stalls (stall > stalls_10sec_ago)"
+                    print "     New stalls"
                     for itr in range(int(stalls_10sec_ago), int(stall)):
 
-                        QoE_stallDur = QoEfromstalls(threadID, processID, itr+1, eventStart, eventEnd, QoE_stallDur)
+                        QoE_stallDur = QoEfromstalls(threadID, processID, itr+1, eventStart, eventEnd, QoE_stallDur, time_10sec_back)
 
                         if stallDur + QoE_stallDur[1] > 10:
                             QoE_stallDur[1] = 10
 
-                        tsStallStart, tsStallEnd = get_event_ts(threadID,processID, itr+1,eventStart, 'ASC'), get_event_ts(threadID,processID, itr+1,eventEnd, 'DESC')
+                        QoE, stallDur = QoE_stallDur[0], QoE_stallDur[1]
+                        # tsStallStart, tsStallEnd = get_event_ts(threadID,processID, itr+1,eventStart, 'ASC'), get_event_ts(threadID,processID, itr+1,eventEnd, 'DESC')
 
                 print "     Current QoE (DQS) -> ", QoE
 
                 test = load_and_play_state.split(', ')
-                #print '     test[1]', test[1].split(']')
+                #print 'test: ',test
                 if len(test) > 1:
                     now_progress = float(test[0].split('[')[1])
                     now_load = float(test[1].split(']')[0])

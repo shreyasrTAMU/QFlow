@@ -49,9 +49,9 @@ while True:
     for i, client in enumerate(example):
 
         if '192.168.1.130' in client[PI.run_cols.index('threadID')]:
-            queueID = 30            #Low queue 9mbit
+            queueID = 10            #Low queue 9mbit
         else:
-            queueID = 10
+            queueID = 30
 
         PI.write_assignment(
             client[PI.run_cols.index('processID')], 
