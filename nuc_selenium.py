@@ -57,7 +57,7 @@ YT_URL_LIST = [
 
 ips = check_output(['hostname', '--all-ip-addresses'])
 IPAddress = ips.split()[0]
-IPAddress = '192.168.1.130'
+IPAddress = '192.168.1.132'
 
 flows = []
 bitrate = '?'
@@ -88,19 +88,19 @@ def session_decider(threadID, directory,):
 def yt_session(threadID, directory, start_time):
     print "Entering yt_session for ",threadID
     time.sleep(0.1)
-    path_to_extension = '/home/ndn3/Downloads/gighmmpiobklfepjocnamgkkbiglidom/4.17.0_0'
+    path_to_extension = '/home/nuc4/Downloads/gighmmpiobklfepjocnamgkkbiglidom/4.9.0_0'
     chromeOptions = webdriver.ChromeOptions()
     chromeOptions.add_argument('load-extension=' + path_to_extension)
     prefs = {"download.default_directory" : directory}
     chromeOptions.add_experimental_option("prefs",prefs)
-    chromedriver = '/home/ndn3/Downloads/chromedriver'
+    chromedriver = '/home/nuc4/Downloads/chromedriver'
     driver = webdriver.Chrome(executable_path=chromedriver, chrome_options=chromeOptions)
-    yt_open_video(driver, threadID, start_time)
+    yt_open_video(driver, threadID, start_time,0)
 
 
-def yt_open_video(driver, threadID, start_time):
+def yt_open_video(driver, threadID, start_time,videoNumber):
 	print "Entering yt_open_video for:",threadID
-
+	
 	try:
 		idx = randrange(0,len(YT_URL_LIST))
 		time.sleep(5)
@@ -114,13 +114,13 @@ def yt_open_video(driver, threadID, start_time):
 			driver.switch_to.window(driver.window_handles[0])
 	except:
 		traceback.print_exc()
-		yt_open_video(driver, threadID, start_time)
+		yt_open_video(driver, threadID, start_time, videoNumber)
+
+	videoNumber += 1
+	yt_set_vq(driver,threadID, start_time, videoNumber)
 
 
-	yt_set_vq(driver,threadID, start_time)
-
-
-def yt_set_vq(driver,threadID, start_time):
+def yt_set_vq(driver,threadID, start_time, videoNumber):
 	print "Entering yt_set_vq for ",threadID
 
 	url_playing = driver.current_url
@@ -136,7 +136,7 @@ def yt_set_vq(driver,threadID, start_time):
 	try:
 		url_playing = driver.current_url
 	except:
-		yt_set_vq(driver,threadID, start_time)
+		yt_set_vq(driver,threadID, start_time, videoNumber)
 
 	while not qualityandautoplay:
 
@@ -178,12 +178,12 @@ def yt_set_vq(driver,threadID, start_time):
 
 
 
-	yt_session_logger(round(time.time()), 0, driver, threadID, url_playing, start_time, 0,'initial_buffering','no dqs state')
+	yt_session_logger(round(time.time()), 0, driver, threadID, videoNumber, start_time, 0,'initial_buffering','no dqs state')
 
 
 
 lock = threading.Lock()
-def yt_session_logger(start, count, driver, threadID, url_playing, start_time,rebufNo,state,dqs_state):
+def yt_session_logger(start, count, driver, threadID, videoNumber, start_time,rebufNo,state,dqs_state):
 	print "Entering yt_session_logger for ",threadID
 
 	time.sleep(1)
@@ -269,8 +269,8 @@ def yt_session_logger(start, count, driver, threadID, url_playing, start_time,re
 				except:
 					traceback.print_exc()
 
-			print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoParametersInSeconds, rebufNo,  url_playing)
-			insert_into_mysql(process_id, threadID, str(flows), bitrate,state, dqs_state, videoParametersInSeconds, rebufNo)
+			print_fields(process_id, threadID, videoNumber, flows, bitrate, state, dqs_state, videoParametersInSeconds, rebufNo)
+			insert_into_mysql(process_id, threadID, videoNumber, str(flows), bitrate,state, dqs_state, videoParametersInSeconds, rebufNo)
 		
 		except:
 			#traceback.print_exc()
@@ -281,7 +281,7 @@ def yt_session_logger(start, count, driver, threadID, url_playing, start_time,re
 			print 'REACHED END OF VIDEO \n'
 		time.sleep(2)
 
-	yt_open_video(driver, threadID, start_time)
+	yt_open_video(driver, threadID, start_time, videoNumber)
 	time.sleep(5)
 
 
@@ -364,10 +364,11 @@ def find_bitrate(driver):
 		traceback.print_exc()
 		return '?'
 
-def print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoParametersInSeconds, rebufNo,  url_playing):
+def print_fields(process_id, threadID, videoNumber, flows, bitrate, state, dqs_state, videoParametersInSeconds, rebufNo):
 
 	print 'process id: ',process_id
 	print 'thread id: ',threadID
+	print 'video Number: ', videoNumber
 	print 'flows: ',flows
 	print 'bitrate: ', bitrate
 	print 'state: ',state
@@ -375,7 +376,6 @@ def print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoPa
 	print 'video parameters in seconds: ',videoParametersInSeconds
 	print 'number of rebuffering: ',rebufNo
 	print 'timestamp: ',int(time.time())
-	# print 'url_playing: ',url_playing
 	
 	if state == "playing":
 		print "----------------------------------------------------------------------------"
@@ -383,17 +383,17 @@ def print_fields(process_id, threadID, flows, bitrate, state, dqs_state, videoPa
 		print '==================================================================================='
 	
 
-def insert_into_mysql(processID, threadID, ports, bitrate, video_player_state, dqs_state, load_and_play_state, stallNo):
+def insert_into_mysql(processID, threadID, videoNumber, ports, bitrate, video_player_state, dqs_state, load_and_play_state, stallNo):
 	_timestamp = int(time.time())
 	hostIP = "192.168.1.218"      # Database server IP
-	username = "ndn3"
+	username = "nuc4"
 	passwd = "cesgtamu"
 	db = "flow_bazaar"                 # Database name
 	try:
 		con = mysql.connector.connect(user=username, password=passwd,host=hostIP, database=db)
 
 		cur = con.cursor()
-		cur.execute("INSERT INTO client_table(processID, threadID, ports, bitrate, video_player_state, dqs_state, load_and_play_state, stallNo, `timestamp`) values (%s, %s, %s, %s, %s, %s, %s, %s, %s) ", (processID, threadID, ports, bitrate, video_player_state, dqs_state, load_and_play_state, stallNo, _timestamp))
+		cur.execute("INSERT INTO client_table(processID, threadID, video_no, ports, bitrate, video_player_state, dqs_state, load_and_play_state, stallNo, `timestamp`) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ", (processID, threadID, videoNumber, ports, bitrate, video_player_state, dqs_state, load_and_play_state, stallNo, _timestamp))
 		con.commit()
 		con.close()
 
