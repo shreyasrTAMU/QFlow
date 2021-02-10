@@ -45,10 +45,10 @@ def insert_into_db(runID, processID,threadID, ports, buffer_state, play_state, b
         traceback.print_exc()
 
 
-def get_event_ts(threadID,processID, stall,event,order):    #order will always be ASC
+def get_event_ts(threadID,processID, video_no, stall,event,order):    #order will always be ASC
     try:
         
-        results = execute_db("SELECT timestamp FROM flow_bazaar.client_table WHERE threadID = '{}' AND processID = {} AND stallNo = '{}' AND dqs_state = '{}' ORDER BY timestamp {} LIMIT 1;".format(threadID,processID, stall,event,order))
+        results = execute_db("SELECT timestamp FROM flow_bazaar.client_table WHERE threadID = '{}' AND processID = {} AND video_no = '{}' AND stallNo = '{}' AND dqs_state = '{}' ORDER BY timestamp {} LIMIT 1;".format(threadID,processID, video_no, stall,event,order))
         
 
         if not results:
@@ -63,7 +63,7 @@ def get_event_ts(threadID,processID, stall,event,order):    #order will always b
 
 def get_prev_state(threadID):
     try:
-        results = execute_db("SELECT QoE, buffer_state, play_state FROM flow_bazaar.results_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID,))
+        results = execute_db("SELECT QoE, buffer_state, play_state FROM flow_bazaar.results_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID, ))
 
         if not results:
             results = -1
@@ -92,7 +92,7 @@ def get_youtube_stalls_10sec_ago(threadID, time_10sec_back):
 
 def get_youtube_specific(threadID):
     try:
-        results = execute_db("SELECT ports, load_and_play_state, video_player_state, bitrate, stallNo, timestamp FROM flow_bazaar.client_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID))
+        results = execute_db("SELECT video_no, ports, load_and_play_state, video_player_state, bitrate, stallNo, timestamp FROM flow_bazaar.client_table WHERE threadID = '{}' ORDER BY timestamp DESC LIMIT 1;".format(threadID))
 
         if not results:
             print "No new youtube state"
@@ -162,10 +162,10 @@ def geteventStartEnd(stall):
         #print '      There is 1 present stall'
     return eventStart,eventEnd
 
-def QoEfromstalls(threadID, processID, stall, eventStart, eventEnd, QoE_stallDur, time_10sec_back):
+def QoEfromstalls(threadID, processID, video_no, stall, eventStart, eventEnd, QoE_stallDur, time_10sec_back):
     QoE, stallDur = QoE_stallDur[0], QoE_stallDur[1]
 
-    tsStallStart, tsStallEnd = get_event_ts(threadID,processID, stall,eventStart,'ASC'), get_event_ts(threadID, processID, stall, eventEnd, 'ASC') #Gets timestamps of when eventStart and eventEnd occurred
+    tsStallStart, tsStallEnd = get_event_ts(threadID,processID, video_no, stall,eventStart,'ASC'), get_event_ts(threadID, processID, video_no, stall, eventEnd, 'ASC') #Gets timestamps of when eventStart and eventEnd occurred
     print '     time10secback: ',time_10sec_back
     print '     eventstart: ',eventStart, '    ',tsStallStart
     print '     eventend: ',eventEnd,'     ',tsStallEnd
@@ -218,10 +218,10 @@ while True:
                 #Getting data from client table    ##############################
                 ################################
 
-                fields = get_youtube_specific(threadID)  #Gets latest fields from client table - ports,load_and_play_state, video_player_state, bitrate, stallNo, timestamp
+                fields = get_youtube_specific(threadID)  #Gets latest fields from client table - video_no, ports,load_and_play_state, video_player_state, bitrate, stallNo, timestamp
                 fields = fields[0]
                 #print '     fields', fields
-                ports, load_and_play_state, play_state, bitrate, stall, currentTime = [fields[i] for i in range(len(fields))]
+                video_no, ports, load_and_play_state, play_state, bitrate, stall, currentTime = [fields[i] for i in range(len(fields))]
 
                 stall = int(stall)
                 currentTime = int(currentTime)
@@ -229,6 +229,7 @@ while True:
                 time_10sec_back = currentTime - time_inbetween_runs  
 
                 stalls_10sec_ago = int(get_youtube_stalls_10sec_ago(threadID,time_10sec_back))  #Gets  stall number from client table with latest timestamp less than time_10sec_back
+                print '     video number: ',video_no
                 print '     stalls_10sec_ago ', stalls_10sec_ago
 
 
@@ -237,6 +238,7 @@ while True:
 
                 prev_result_state = get_prev_state(threadID)   #Getting latest QoE, buffer_state, play_state from results table
                 if prev_result_state == -1:
+                    print '     New video'
                     prev_buffer_state, prev_play_state, prev_QoE = 0, 'initial playing', 5
 
                 else:
@@ -248,7 +250,7 @@ while True:
                 #print '     prev_play_state: ',prev_play_state
                 print "     Prev QoE -> ", prev_QoE
 
-                if stalls_10sec_ago > stall:  #If for some reason number of stalls 10 sec back > present number of stalls
+                if stalls_10sec_ago > stall:  #If we start a new video for some reason number of stalls 10 sec back > present number of stalls
                     stalls_10sec_ago = stall
 
                 print '     stalls ',stall
@@ -265,18 +267,20 @@ while True:
                 QoE_stallDur = [QoE, stallDur]
                 if stall == 0:
                     QoE = playbackDQS(prev_QoE, 1, 10)[-1]
+                    print "     Current QoE (DQS) -> ", QoE
 
                 elif stall == stalls_10sec_ago:   #No new stalls
                     print '     No new stalls'
-                    QoE_stallDur = QoEfromstalls(threadID, processID, stall, eventStart, eventEnd, QoE_stallDur, time_10sec_back)
+                    QoE_stallDur = QoEfromstalls(threadID, processID, video_no, stall, eventStart, eventEnd, QoE_stallDur, time_10sec_back)
                     QoE, stallDur = QoE_stallDur[0], QoE_stallDur[1]
+                    print "     Current QoE (DQS) -> ", QoE
             
                 elif stall > stalls_10sec_ago:    #Stall(s) has occurred in the past 10 sec
 
                     print "     New stalls"
                     for itr in range(int(stalls_10sec_ago), int(stall)):
 
-                        QoE_stallDur = QoEfromstalls(threadID, processID, itr+1, eventStart, eventEnd, QoE_stallDur, time_10sec_back)
+                        QoE_stallDur = QoEfromstalls(threadID, processID, video_no, itr+1, eventStart, eventEnd, QoE_stallDur, time_10sec_back)
 
                         if stallDur + QoE_stallDur[1] > 10: #stallDur is previous stallDur 
                             QoE_stallDur[1] = 10
@@ -284,7 +288,7 @@ while True:
                         QoE, stallDur = QoE_stallDur[0], QoE_stallDur[1]
                         # tsStallStart, tsStallEnd = get_event_ts(threadID,processID, itr+1,eventStart, 'ASC'), get_event_ts(threadID,processID, itr+1,eventEnd, 'DESC')
 
-                print "     Current QoE (DQS) -> ", QoE
+                        print "     Current QoE (DQS) -> ", QoE
 
                 test = load_and_play_state.split(', ')
                 #print 'test: ',test

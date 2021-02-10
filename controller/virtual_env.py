@@ -20,9 +20,6 @@ from time import sleep, time
 
 # time step between decisions in seconds
 TIME_STEP = 10
-# maximum QoE obtainable
-MAX_QOE = 5
-PERIOD = 10
 
 top_limit = 2
 n_queues = 2
@@ -33,25 +30,6 @@ actions = [
     for i in range(action_cardinality) 
     if sum([(i//(n_queues**c))%n_queues for c in range(n_clients)]) == top_limit
 ]
-
-# state feature labels
-FEATURE_LABELS = [PI.run_cols.index(label) for label in [ 
- 
-    'buffer_state', 
-    # 'play_state', 
-    'bitrate', 
-    'Stalls', 
-    'stallDur', 
-    'prev_QoE', 
-    'QoE'
-]]
-
-# client ID labels
-ID_LABELS = [PI.run_cols.index(label) for label in [
-    'processID',
-    'threadID',
-    'ports'
-]]
 
 
 class VideoStreamEnv(gym.Env):
@@ -125,14 +103,14 @@ class VideoStreamEnv(gym.Env):
         self.step_counter = self.step_counter+1
         done = False
         if(self.step_counter > 1):
-        	sleep(10)
+        	sleep(TIME_STEP)
         #action = actions[action] #for dqn 
 
         states = [[0,0,0] for _ in range(n_clients)]
         reward = 0
 
         latestrun = PI.latest_run()
-        latestrun = 37
+
         print('Latest run: ',latestrun)
         print('Action to take: ',action)
 

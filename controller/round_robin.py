@@ -31,7 +31,7 @@ actions = [
     for i in range(action_cardinality) 
     if sum([(i//(n_queues**c))%n_queues for c in range(n_clients)]) == top_limit
 ]
-
+print('len of actions ',len(actions))
 env = VideoStreamEnv()
 
 # env = DummyVecEnv([lambda: env])
@@ -44,15 +44,17 @@ for i in range (1): #episodes
     obs = env.reset()
     avg_qoe = 0
     for t in range(180):  # timesteps for each episode (TTL)
+        print('action index',actionindex)
         obs, rewards, dones, info = env.step(actions[actionindex])
         actionindex = actionindex + 1 
-        if(actionindex == 16):
+        if(actionindex >= len(actions)):
             actionindex = 0
         avg_qoe = avg_qoe+(rewards)
         reward_list.append(rewards)
-        print("total avg_qoe:",rewards)
+        print("current avg_qoe:",rewards)
+        print("total avg_qoe: {}".format(sum(reward_list)/len(reward_list)))
         print('-------------------------------------------------------------------')
-        file = open('rewards.txt', 'a')
+        file = open('roundrobin_rewards.txt', 'a')
         file.write(str(rewards))
         file.write(',')
         file.close()
@@ -61,11 +63,11 @@ for i in range (1): #episodes
             break
 
 save_trace(reward_list, 'reward_list_rr_trial_1.p')
-print("avg_qoe: {}".format(sum(reward_list)/len(reward_list)))
+print("total avg_qoe: {}".format(sum(reward_list)/len(reward_list)))
 plt.title('Rewards')
 plt.xlabel('Time')
 plt.ylabel('Reward')
 plt.plot(reward_list, label='episodic_avg')
 plt.legend()
-plt.savefig('eval_results.png')
+plt.savefig('roundrobin_results.png')
 plt.show()
