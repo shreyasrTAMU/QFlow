@@ -48,8 +48,8 @@ while True:
     print('=============================================')
     for i, client in enumerate(example):
 
-        if '192.168.1.132' in client[PI.run_cols.index('threadID')]:
-            queueID = 10            #Low queue 9mbit
+        if '192.168.1.132/1' == client[PI.run_cols.index('threadID')]:
+            queueID = 10            #High queue
         else:
             queueID = 30
 

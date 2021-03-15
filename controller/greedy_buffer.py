@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines.deepq.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
-from virtual.virtual_env import VideoStreamEnv
+from virtual_env import VideoStreamEnv
 from stable_baselines import DQN
 import pickle 
 import random 
@@ -51,15 +51,15 @@ how_many = 2 # change this to increase number of clients allowed in the high q
 
 for i in range (1): #episodes
     obs = env.reset()
-    for t in range(90):  # timesteps for each episode (TTL)
+    for t in range(270):  # timesteps for each episode (TTL)
         obs, rewards, dones, info = env.step(action) #110000
         action = [0,0,0,0,0,0]
         buffer_state = np.array([obs[0][c][0] for c in range(n_clients)])
         buffer_state = [float(i) for i in buffer_state]
         buffer_state = np.array(buffer_state)
         print("buffer_state: ",buffer_state)
-        least_buffered = (buffer_state.argsort()[:2])
-        print(least_buffered)
+        least_buffered = (buffer_state.argsort()[:how_many])
+        #print(least_buffered)
         for m in range (n_clients):
             if (m == least_buffered[0] or m == least_buffered[1]):
                 action[m] = 1
@@ -71,6 +71,7 @@ for i in range (1): #episodes
         file.write(',')
         file.close()
         print('reward={0}  t ={1}, action = {2}'.format(rewards,t, action))
+        print('---------------------------------------------------------------')
 save_trace(reward_list, 'reward_list_greedy_buffer_tr_2')
 print("avg_qoe: {}".format(sum(reward_list)/len(reward_list)))
 plt.title('Rewards')
@@ -78,5 +79,5 @@ plt.xlabel('Time')
 plt.ylabel('Reward')
 plt.plot(reward_list, label='episodic_avg')
 plt.legend()
-plt.savefig('eval_results.png')
+plt.savefig('greedy_results.png')
 plt.show()

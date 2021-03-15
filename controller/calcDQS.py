@@ -112,26 +112,109 @@ def playbackDQS(Q0, playbackCnt, playbackLen):
 
     return sol
 
-'''
-mos=2.5
-print mos
 
-mos = playbackDQS(mos, 1, 30)[-1]
-print mos
+# mos=2.5
+# print mos
 
-print "stall"
-mos = interruptDQS(mos, 2, 8)[-1]
-print mos
+# mos = playbackDQS(mos, 1, 30)[-1]
+# print mos
 
-print "playback"
-mos = playbackDQS(mos, 2, 10)[-1]
-print mos
+# print "stall"
+# mos = interruptDQS(mos, 2, 8)[-1]
+# print mos
 
-print "stall"
-mos=interruptDQS(mos, 3, 12)[-1]
-print mos
+# print "playback"
+# mos = playbackDQS(mos, 2, 10)[-1]
+# print mos
 
-print "playback"
-mos = playbackDQS(mos, 3, 20)[-1]
-print mos
-'''
+# print "stall"
+# mos=interruptDQS(mos, 3, 12)[-1]
+# print mos
+
+# print "playback"
+# mos = playbackDQS(mos, 3, 20)[-1]
+# print mos
+
+
+
+
+#Difference in values after 20sec of playback
+# mos= 5
+# print mos
+
+# print "stall"
+# mos = interruptDQS(mos, 2, 8)[-1]
+# print mos
+
+# print "playback for 20"
+# mos = playbackDQS(mos, 2, 20)[-1]
+# print mos
+
+
+# print '-------------------------------'
+# mos = 5
+
+# print "stall"
+# mos = interruptDQS(mos, 2, 8)[-1]
+# print mos
+
+# mos = playbackDQS(mos, 2, 10)[-1]
+# print mos
+
+
+#Difference in values after stalling for 20sec
+# mos = 5
+# mos = interruptDQS(mos, 1, 10)[-1]
+# print mos
+# mos = interruptDQS(mos, 1, 10)[-1]
+# print mos
+
+# print '------------'
+# mos = 5
+# mos = interruptDQS(mos, 1, 20)[-1]
+# print mos
+
+
+
+
+# mos= 5
+# print mos
+
+# mos = playbackDQS(mos, 1, 30)[-1]
+# print mos
+
+# print "stall 1"
+# mos = interruptDQS(mos, 2, 10)[-1]
+# print mos
+
+# print "playback"
+# mos = playbackDQS(mos, 2, 10)[-1]
+# print mos
+
+# print "stall"
+# mos=interruptDQS(mos, 3, 10)[-1]
+# print mos
+
+# print "playback"
+# mos = playbackDQS(mos, 3, 20)[-1]
+# print mos
+
+# # print "playback"
+# # mos = playbackDQS(mos, 3, 10)[-1]
+# # print mos
+
+# # print "playback"
+# # mos = playbackDQS(mos, 3, 10)[-1]
+# # print mos
+
+
+# mos = 5
+# mos = interruptDQS(mos, 1, 10)[-1]
+# print mos
+# mos = interruptDQS(mos, 1, 10)[-1]
+# print mos
+
+# print '------------'
+# mos = 5
+# mos = interruptDQS(mos, 1, 20)[-1]
+# print mos

@@ -169,11 +169,11 @@ def QoEfromstalls(threadID, processID, video_no, stall, eventStart, eventEnd, Qo
     print '     time10secback: ',time_10sec_back
     print '     eventstart: ',eventStart, '    ',tsStallStart
     print '     eventend: ',eventEnd,'     ',tsStallEnd
-    if tsStallEnd == -1 and tsStallStart > time_10sec_back:   #Buffering has started in the past 10 sec and is still going on
+    if tsStallEnd == -1:   #Buffering has started in the past 10 sec and is still going on
         print '     Buffering has started in the past 10 sec and is still going on'
         tsStallEnd = time_10sec_back + 10 #int(get_event_end_ts(IP_Address,processID,stall,eventStart))
         print '     ==>tsstallend: ',tsStallEnd
-    if tsStallEnd > time_10sec_back:    #If buffering ended in the last 10 sec
+    if tsStallEnd > time_10sec_back:    #If buffering ended in the last 10 sec (including if buffering hasnt ended at all)
         print '     Buffering ended in last 10sec'
         if tsStallStart < time_10sec_back:    #If buffering began before last 10 sec too
             tsStallStart = time_10sec_back
@@ -183,12 +183,12 @@ def QoEfromstalls(threadID, processID, video_no, stall, eventStart, eventEnd, Qo
         if stallDur > 10:
             stallDur = 10
 
-        print '     ',threadID, ': QoE -> ',QoE, ',stall -> ',stall, ',Stall duration -> ', stallDur
+        print '     ',threadID, ': QoE -> ',QoE, ',stall -> ',stall, ',Stall for -> ', stallDur
         QoE = interruptDQS(QoE, stall, stallDur)[-1]
 
     else:   #event ended more than 10sec back
         print "     Playback without stalls!"
-        print '     ',threadID, ': QoE -> ',QoE, ',stall -> ',stall, ',Stall duration -> ', stallDur
+        print '     ',threadID, ': QoE -> ',QoE, ',playbackcnt -> ',stall, 'playback for -> ', 10-stallDur
         QoE = playbackDQS(QoE, stall, 10-stallDur)[-1]
 
     
@@ -266,8 +266,9 @@ while True:
 
                 QoE_stallDur = [QoE, stallDur]
                 if stall == 0:
-                    QoE = playbackDQS(prev_QoE, 1, 10)[-1]
-                    print "     Current QoE (DQS) -> ", QoE
+                    print '     ',threadID,' playback for 10'
+                    QoE = playbackDQS(prev_QoE, 1, 10)[-1]  #playbackdqs starts from 1 playback
+                    print "     Current QoE (DQS) 0 stalls -> ", QoE
 
                 elif stall == stalls_10sec_ago:   #No new stalls
                     print '     No new stalls'

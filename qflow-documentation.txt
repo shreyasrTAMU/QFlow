@@ -9,7 +9,8 @@ Stopping openflow             :  /etc/init.d/openflow stop
 NUC controller: 192.168.1.218/192.168.10.2	ndn2
 NUC client 1: 192.168.1.132					nuc4
 NUC client 2: 192.168.1.129					amdroider
-NUC client 3: 192.168.1.130/ 192.168.10.4   ndn3					(password: ndn)
+NUC client 3: 192.168.1.130/ 192.168.10.4   ndn3		
+
 
 For any new NUC, make sure download directory and username are changed in nuc_selenium.py. Make sure controller NUC has given it permission
 
@@ -23,6 +24,7 @@ On controller NUC, ssh into OpenWrt. Run the script to create queues (createqueu
 		Wait till ryu properly connects (it may take some time to start sending instructions).
 
 		If openwrt says port already in use, use 'ps w' to find pid of odatapath, and then kill
+		log file /tmp/log/ofdatapath.log
 		
 		If Ryu gives an error of "No module named controller.py" and the directories are right, then there is an error in controller.py. Check by doing 'python controller.py' to debug.
 		
