@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines.deepq.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
-from virtual.virtual_env import VideoStreamEnv
+from virtual_env import VideoStreamEnv
 from stable_baselines import DQN
 import pickle 
 
@@ -38,7 +38,7 @@ env = DummyVecEnv([lambda: env])
 reward_list = []
 model = DQN.load("Qflow32_128_32",env)
 _states = 0
-episodelength = 90
+episodelength = 360
 no_epi = 1
 for i in range (no_epi): 
     obs = env.reset()
@@ -46,7 +46,6 @@ for i in range (no_epi):
 
     for i in range(episodelength):
         action, _states = model.predict(obs)
-        print(action)
         obs, rewards, dones, info = env.step(action)
         avg_qoe = avg_qoe+rewards
         reward_list.append(rewards)
@@ -62,5 +61,5 @@ plt.xlabel('Time')
 plt.ylabel('Reward')
 plt.plot(reward_list, label='Episodic Average')
 plt.legend()
-plt.savefig('eval_results_dqn_1.png')
+plt.savefig('dqn_results.png')
 plt.show()

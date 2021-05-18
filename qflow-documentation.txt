@@ -22,7 +22,8 @@ Open mysql workbench - sudo mysql-workbench (password for database schema: cesgt
 In qflow or updated or qflow/updated,
 On controller NUC, ssh into OpenWrt. Run the script to create queues (createqueue.sh). Run openflow (/etc/init.d/openflow start). Then run "ryu-manager --verbose controller.py" on another tab to connect to openflow with ryu.
 		Wait till ryu properly connects (it may take some time to start sending instructions).
-
+		When stopping, stop openfow first then ryu.
+		
 		If openwrt says port already in use, use 'ps w' to find pid of odatapath, and then kill
 		log file /tmp/log/ofdatapath.log
 		

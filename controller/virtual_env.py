@@ -104,7 +104,7 @@ class VideoStreamEnv(gym.Env):
         done = False
         if(self.step_counter > 1):
         	sleep(TIME_STEP)
-        #action = actions[action] #for dqn 
+        action = actions[action] #for dqn 
 
         states = [[0,0,0] for _ in range(n_clients)]
         reward = 0
@@ -139,7 +139,7 @@ class VideoStreamEnv(gym.Env):
                 else:
                     queueID = 30
 
-                print(client[PI.run_cols.index('threadID')],'  QoE:', client[PI.run_cols.index('QoE')],' sent to ',queueID)
+                print(client[PI.run_cols.index('threadID')],'  buffer:',client[PI.run_cols.index('buffer_state')],  'QoE:', client[PI.run_cols.index('QoE')],' sent to ',queueID)
                 self.write_to_policy(client,action,queueID)
 
             self.state = states

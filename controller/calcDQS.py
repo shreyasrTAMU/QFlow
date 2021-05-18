@@ -1,4 +1,5 @@
 import math
+import matplotlib.pyplot as plt
 
 # Sample call:
 # FOR STALL; returns output during entire stall region:
@@ -148,15 +149,7 @@ def playbackDQS(Q0, playbackCnt, playbackLen):
 
 # print "playback for 20"
 # mos = playbackDQS(mos, 2, 20)[-1]
-# print mos
-
-
-# print '-------------------------------'
-# mos = 5
-
-# print "stall"
-# mos = interruptDQS(mos, 2, 8)[-1]
-# print mos
+# print mosd
 
 # mos = playbackDQS(mos, 2, 10)[-1]
 # print mos
@@ -176,7 +169,7 @@ def playbackDQS(Q0, playbackCnt, playbackLen):
 
 
 
-
+#Example shown in paper
 # mos= 5
 # print mos
 
@@ -208,13 +201,13 @@ def playbackDQS(Q0, playbackCnt, playbackLen):
 # # print mos
 
 
-# mos = 5
-# mos = interruptDQS(mos, 1, 10)[-1]
-# print mos
-# mos = interruptDQS(mos, 1, 10)[-1]
-# print mos
+# mosvalues = []
+# for i in range(1,500):
+#     mos = playbackDQS(5, 1, i)[-1]
+#     mosvalues.append(mos)
 
-# print '------------'
-# mos = 5
-# mos = interruptDQS(mos, 1, 20)[-1]
-# print mos
+
+
+
+# plt.plot(mosvalues)
+# plt.show()

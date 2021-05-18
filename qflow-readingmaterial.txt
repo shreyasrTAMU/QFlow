@@ -52,6 +52,7 @@ Delete all data: truncate table client_table; truncate table results_table; trun
 3. Ryu:
 testryu.py on nuc4
 To install:             https://ryu.readthedocs.io/en/latest/getting_started.html
+Ryu is found in /home/ndn2/.local/lib/python2.7/site-packages if you want to modify anything
 
 Running ryu:        ryu-manager --verbose fb_exec_cmd.py
 Starting openflow on router:  /etc/init.d/openflow start

@@ -31,15 +31,13 @@ run_cols = [    #Columns in results table
     'processID',
     'threadID',
     'ports', 
+    'prev_play_state',
     'play_state', 
-    'bitrate', 
     'Stalls', 
     'stallDur', 
-    'prev_QoE',
-    'prev_play_state',
-    'prev_buffer_state', 
+    'prev_buffer_state',
     'buffer_state',
-    'queueID',
+    'prev_QoE',
     'QoE',
     'timestamp' 
 ]

@@ -1,3 +1,4 @@
+ 
 from __future__ import division
 from calcDQS import interruptDQS
 from calcDQS import playbackDQS
@@ -31,13 +32,13 @@ def execute_db(sql_script):
     except:
         traceback.print_exc()
 
-def insert_into_db(runID, processID,threadID, ports, buffer_state, play_state, bitrate, currentStall, stallDur, prev_QoE, prev_buffer_state, prev_play_state, queueID, QoE):
+def insert_into_db(runID, processID,threadID, ports, buffer_state, play_state, currentStall, stallDur, prev_QoE, prev_buffer_state, prev_play_state, QoE):
     timestamp = int(time.time())
     try:
         con = MySQLdb.connect(host=hostIP, user=username, passwd=passwd, db=db)
 
         cur = con.cursor()
-        cur.execute("INSERT INTO flow_bazaar.results_table(runID, processID,threadID, ports, buffer_state, play_state, bitrate, Stalls, stallDur, prev_QoE, prev_buffer_state, prev_play_state, queueID, QoE, timestamp) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (runID, processID,threadID, ports, buffer_state, play_state, bitrate, currentStall, stallDur, prev_QoE, prev_buffer_state, prev_play_state, queueID, QoE, timestamp))
+        cur.execute("INSERT INTO flow_bazaar.results_table(runID, processID,threadID, ports, buffer_state, play_state, Stalls, stallDur, prev_QoE, prev_buffer_state, prev_play_state, QoE, timestamp) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (runID, processID,threadID, ports, buffer_state, play_state, currentStall, stallDur, prev_QoE, prev_buffer_state, prev_play_state, QoE, timestamp))
         con.commit()
         con.close()
 
@@ -307,7 +308,7 @@ while True:
                 print '     ',runID, processID,threadID, buffer_state, play_state, currentStall, stallDur, prev_QoE, prev_buffer_state, prev_play_state, QoE
 
 
-                insert_into_db(runID, processID,threadID, ports, buffer_state, play_state, bitrate, currentStall, stallDur, prev_QoE, prev_buffer_state, prev_play_state, queueID, QoE)
+                insert_into_db(runID, processID,threadID, ports, buffer_state, play_state, currentStall, stallDur, prev_QoE, prev_buffer_state, prev_play_state, QoE)
             except:
                 traceback.print_exc()
                 pass

@@ -43,7 +43,7 @@ actionindex = 0
 for i in range (1): #episodes
     obs = env.reset()
     avg_qoe = 0
-    for t in range(180):  # timesteps for each episode (TTL)
+    for t in range(540):  # timesteps for each episode (TTL)
         print('action index',actionindex)
         obs, rewards, dones, info = env.step(actions[actionindex])
         actionindex = actionindex + 1 

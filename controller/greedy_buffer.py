@@ -51,13 +51,13 @@ how_many = 2 # change this to increase number of clients allowed in the high q
 
 for i in range (1): #episodes
     obs = env.reset()
-    for t in range(270):  # timesteps for each episode (TTL)
+    for t in range(540):  # timesteps for each episode (TTL)
         obs, rewards, dones, info = env.step(action) #110000
         action = [0,0,0,0,0,0]
         buffer_state = np.array([obs[0][c][0] for c in range(n_clients)])
         buffer_state = [float(i) for i in buffer_state]
         buffer_state = np.array(buffer_state)
-        print("buffer_state: ",buffer_state)
+        #print("buffer_state: ",buffer_state)
         least_buffered = (buffer_state.argsort()[:how_many])
         #print(least_buffered)
         for m in range (n_clients):
