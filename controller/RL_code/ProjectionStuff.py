@@ -228,9 +228,10 @@ def calcReward(nextState):
   return reward/n_clients
 
 M=100
-
+print('Length of actions: ',len(actions))
 for action in actions:
-  print(actions.index(action))  
+
+  print('actions.index(action): ',actions.index(action))  
   for state in newbiglist:
     for itr in range(M):
       nextState = generateNextState(state,action)
