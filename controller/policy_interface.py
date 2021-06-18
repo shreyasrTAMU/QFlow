@@ -33,6 +33,7 @@ run_cols = [    #Columns in results table
     'ports', 
     'prev_play_state',
     'play_state', 
+    'dqs_state',
     'Stalls', 
     'stallDur', 
     'prev_buffer_state',
