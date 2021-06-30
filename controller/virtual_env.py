@@ -77,8 +77,8 @@ class VideoStreamEnv(gym.Env):
             client[PI.run_cols.index('prev_buffer_state')],
             client[PI.run_cols.index('buffer_state')],
             client[PI.run_cols.index('QoE')],
-            #action.count(1), #for dqn
-            np.count_nonzero(action == 1), # for non-rl
+            action.count(1), #keep for dqn and index
+            #np.count_nonzero(action == 1), # for non-rl
             queueID,
             client[PI.run_cols.index('Stalls')]
         )
@@ -104,7 +104,7 @@ class VideoStreamEnv(gym.Env):
         done = False
         if(self.step_counter > 1):
         	sleep(TIME_STEP)
-        action = actions[action] #for dqn 
+        action = actions[action] #uncommented only for dqn 
 
         states = [[0,0,0] for _ in range(n_clients)]
         reward = 0
@@ -127,8 +127,9 @@ class VideoStreamEnv(gym.Env):
             for i, client in enumerate(allinfo):
                 state1client = [
                     client[PI.run_cols.index('buffer_state')],
-                    client[PI.run_cols.index('Stalls')],
+                    #client[PI.run_cols.index('Stalls')],
                     client[PI.run_cols.index('QoE')],
+                    client[PI.run_cols.index('dqs_state')]
                 ]
                 states[i] = state1client
 
